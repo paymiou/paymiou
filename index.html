@@ -1,9 +1,275 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh">
 <head>
-    <title>測試頁面</title>
+<meta charset="UTF-8">
+<title>3D 海底永續探險</title>
+
+<style>
+body {
+    margin:0;
+    overflow:hidden;
+    font-family:sans-serif;
+    background:black;
+}
+
+#ui {
+    position:absolute;
+    top:20px;
+    left:20px;
+    color:white;
+    background:rgba(0,0,0,0.5);
+    padding:15px;
+    border-radius:10px;
+}
+
+#questionBox {
+    position:absolute;
+    top:50%;
+    left:50%;
+    transform:translate(-50%,-50%);
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    display:none;
+    width:300px;
+}
+
+button {
+    margin-top:10px;
+    padding:10px;
+    width:100%;
+}
+</style>
+
 </head>
 <body>
-    <h1>網站成功部署 🎉</h1>
+
+<div id="ui">
+🌊 海底深度: <span id="depth">0</span> m<br>
+🧴 清除垃圾: <span id="score">0</span>
+</div>
+
+<div id="questionBox">
+<div id="questionText"></div>
+<button onclick="answer(true)">正確</button>
+<button onclick="answer(false)">錯誤</button>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<script>
+
+// ====== ThreeJS 基本設定 ======
+
+const scene = new THREE.Scene()
+scene.background = new THREE.Color(0x001e3c)
+scene.fog = new THREE.Fog(0x001e3c, 10, 50)
+
+const camera = new THREE.PerspectiveCamera(
+75,
+window.innerWidth/window.innerHeight,
+0.1,
+1000
+)
+
+const renderer = new THREE.WebGLRenderer()
+renderer.setSize(window.innerWidth, window.innerHeight)
+document.body.appendChild(renderer.domElement)
+
+// ===== 光源 =====
+
+const light = new THREE.PointLight(0x66ccff, 2, 50)
+light.position.set(0,10,0)
+scene.add(light)
+
+const ambient = new THREE.AmbientLight(0x404040)
+scene.add(ambient)
+
+// ===== 海底 =====
+
+const floorGeo = new THREE.PlaneGeometry(200,200)
+const floorMat = new THREE.MeshPhongMaterial({
+color:0x0a2a43
+})
+
+const floor = new THREE.Mesh(floorGeo,floorMat)
+floor.rotation.x = -Math.PI/2
+scene.add(floor)
+
+// ===== 玩家 =====
+
+camera.position.y = 2
+camera.position.z = 5
+
+let keys = {}
+
+document.addEventListener("keydown",e=>{
+keys[e.key]=true
+})
+
+document.addEventListener("keyup",e=>{
+keys[e.key]=false
+})
+
+// ===== 滑鼠視角 =====
+
+let mouseX = 0
+let mouseY = 0
+
+document.addEventListener("mousemove",e=>{
+mouseX = (e.clientX/window.innerWidth-0.5)*2
+mouseY = (e.clientY/window.innerHeight-0.5)*2
+})
+
+// ===== 垃圾 =====
+
+let trashList = []
+
+function spawnTrash(){
+
+const geo = new THREE.BoxGeometry(1,1,1)
+const mat = new THREE.MeshPhongMaterial({
+color:0xff5555
+})
+
+const trash = new THREE.Mesh(geo,mat)
+
+trash.position.x = Math.random()*40-20
+trash.position.z = Math.random()*40-20
+trash.position.y = 1
+
+scene.add(trash)
+trashList.push(trash)
+
+}
+
+// 生成20個垃圾
+for(let i=0;i<20;i++){
+spawnTrash()
+}
+
+// ===== 題庫 =====
+
+const questions = [
+{q:"塑膠需要數百年分解？",a:true},
+{q:"塑膠袋可以自然消失？",a:false},
+{q:"寶特瓶可以回收？",a:true},
+{q:"海龜會吃塑膠？",a:true},
+{q:"塑膠對海洋無害？",a:false},
+{q:"微塑膠存在海洋？",a:true},
+{q:"塑膠燃燒無毒？",a:false},
+{q:"一次性塑膠可重複用？",a:true},
+{q:"吸管不可回收？",a:true},
+{q:"塑膠來自石油？",a:true}
+]
+
+let currentQuestion
+let currentTrash
+
+// ===== 點擊偵測 =====
+
+const raycaster = new THREE.Raycaster()
+const mouse = new THREE.Vector2()
+
+window.addEventListener("click",e=>{
+
+mouse.x = (e.clientX/window.innerWidth)*2-1
+mouse.y = -(e.clientY/window.innerHeight)*2+1
+
+raycaster.setFromCamera(mouse,camera)
+
+const hits = raycaster.intersectObjects(trashList)
+
+if(hits.length>0){
+
+currentTrash = hits[0].object
+
+askQuestion()
+
+}
+
+})
+
+// ===== 問題 =====
+
+function askQuestion(){
+
+currentQuestion =
+questions[Math.floor(Math.random()*questions.length)]
+
+document.getElementById("questionText").innerText =
+currentQuestion.q
+
+document.getElementById("questionBox").style.display="block"
+
+}
+
+// ===== 回答 =====
+
+function answer(choice){
+
+if(choice==currentQuestion.a){
+
+scene.remove(currentTrash)
+trashList.splice(trashList.indexOf(currentTrash),1)
+
+score++
+
+document.getElementById("score").innerText=score
+
+}
+
+document.getElementById("questionBox").style.display="none"
+
+}
+
+// ===== 分數 =====
+
+let score=0
+
+// ===== 移動 =====
+
+function move(){
+
+const speed=0.1
+
+if(keys["w"]) camera.position.z-=speed
+if(keys["s"]) camera.position.z+=speed
+if(keys["a"]) camera.position.x-=speed
+if(keys["d"]) camera.position.x+=speed
+
+camera.rotation.y = -mouseX*0.5
+camera.rotation.x = -mouseY*0.3
+
+}
+
+// ===== 深度 =====
+
+function updateDepth(){
+
+const depth =
+Math.floor(Math.abs(camera.position.z))
+
+document.getElementById("depth").innerText=depth
+
+}
+
+// ===== 動畫 =====
+
+function animate(){
+
+requestAnimationFrame(animate)
+
+move()
+updateDepth()
+
+renderer.render(scene,camera)
+
+}
+
+animate()
+
+</script>
+
 </body>
 </html>
