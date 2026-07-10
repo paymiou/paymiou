@@ -1,0 +1,513 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { BookOpen, HelpCircle, ArrowRight, RefreshCw, CheckCircle2, XCircle, Timer, Trophy, Percent } from 'lucide-react';
+
+// 植化素與蔬果資料庫 (嚴格排除肉食與五辛白色蔬菜)
+const phytoData = [
+  {
+    id: 'red',
+    colorName: '紅色',
+    bgColor: 'bg-red-500',
+    hoverColor: 'hover:bg-red-600',
+    textColor: 'text-red-600',
+    borderColor: 'border-red-200',
+    phytochemical: '茄紅素、花青素',
+    benefits: ['強效抗氧化', '保護心血管', '維護攝護腺健康'],
+    foods: ['番茄', '西瓜', '紅甜椒', '草莓', '櫻桃', '紅石榴', '蔓越莓', '紅莧菜', '紅龍果'],
+    emoji: '🍅🍉🍓🍒🍎',
+    description: '紅色蔬果就像身體的滅火器，能對抗體內的自由基！'
+  },
+  {
+    id: 'orange',
+    colorName: '黃橘色',
+    bgColor: 'bg-orange-500',
+    hoverColor: 'hover:bg-orange-600',
+    textColor: 'text-orange-600',
+    borderColor: 'border-orange-200',
+    phytochemical: 'β-胡蘿蔔素、葉黃素',
+    benefits: ['保護眼睛視力', '維持皮膚與黏膜健康', '增強身體免疫力'],
+    foods: ['胡蘿蔔', '南瓜', '玉米', '木瓜', '黃甜椒', '地瓜', '芒果', '柑橘', '鳳梨'],
+    emoji: '🥕🎃🌽🍊🍍',
+    description: '黃橘色蔬果是眼睛的守護神，也能讓皮膚保持水潤漂亮喔！'
+  },
+  {
+    id: 'green',
+    colorName: '綠色',
+    bgColor: 'bg-green-500',
+    hoverColor: 'hover:bg-green-600',
+    textColor: 'text-green-600',
+    borderColor: 'border-green-200',
+    phytochemical: '葉綠素、兒茶素、葉酸',
+    benefits: ['幫助肝臟排毒', '強效抗氧化', '維護骨骼與牙齒健康'],
+    foods: ['菠菜', '花椰菜', '奇異果', '芭樂', '蘆筍', '秋葵', '小黃瓜', '地瓜葉', '綠青椒'],
+    emoji: '🥦🥝🥬🥒🟢',
+    description: '綠色是自然界中最常見的顏色，是身體清道夫，幫助排出不好的物質。'
+  },
+  {
+    id: 'purple',
+    colorName: '紫黑色',
+    bgColor: 'bg-purple-600',
+    hoverColor: 'hover:bg-purple-700',
+    textColor: 'text-purple-600',
+    borderColor: 'border-purple-200',
+    phytochemical: '花青素、白藜蘆醇',
+    benefits: ['極佳抗氧化劑', '保護微血管與眼睛', '維持記憶力與抗老化'],
+    foods: ['茄子', '葡萄', '藍莓', '黑木耳', '紫甘藍', '桑椹', '黑芝麻', '紫地瓜', '黑豆'],
+    emoji: '🍆🍇🫐🖤🟣',
+    description: '紫黑色蔬果是抗老精靈！對於常用3C產品的現代人來說非常重要。'
+  },
+  {
+    id: 'white',
+    colorName: '白色',
+    bgColor: 'bg-slate-100',
+    hoverColor: 'hover:bg-slate-200',
+    textColor: 'text-slate-700',
+    borderColor: 'border-slate-300',
+    phytochemical: '有機硫化物、多醣體',
+    benefits: ['降低發炎反應', '保護呼吸道健康', '提升免疫防禦力'],
+    foods: ['白蘿蔔', '高麗菜', '山藥', '蓮藕', '白花椰菜', '馬鈴薯', '竹筍', '杏鮑菇', '白木耳', '冬瓜'],
+    emoji: '🍄🥔🥬⚪️🥟',
+    description: '非五辛的白色蔬果含有豐富多醣體與膳食纖維，是溫和又強大的防禦力量！'
+  }
+];
+
+const GAME_TIME = 60; // 遊戲總時間 (秒)
+
+// 精選 30 道不重複的題庫
+const questionBank = [
+  // 紅色 (6題)
+  { text: "哪種顏色的蔬果富含「茄紅素」，就像身體的滅火器？", correctId: "red" },
+  { text: "如果你想「保護心血管」，多吃哪種顏色的蔬果最合適？", correctId: "red" },
+  { text: "如果你想「維護攝護腺健康」，應該多吃哪種顏色的蔬果？", correctId: "red" },
+  { text: "「番茄」屬於哪種顏色，能幫助對抗體內的自由基？", correctId: "red" },
+  { text: "「紅石榴」與「蔓越莓」屬於哪種顏色，提供專屬的植化素？", correctId: "red" },
+  { text: "「草莓」與「櫻桃」在植化素分類中屬於哪種顏色？", correctId: "red" },
+  // 黃橘色 (6題)
+  { text: "哪種顏色的蔬果富含「β-胡蘿蔔素」，是眼睛的守護神？", correctId: "orange" },
+  { text: "哪種顏色的蔬果富含「葉黃素」？", correctId: "orange" },
+  { text: "如果你想「維持皮膚與黏膜健康」，多吃哪種顏色？", correctId: "orange" },
+  { text: "「胡蘿蔔」屬於哪種顏色，能讓皮膚保持水潤漂亮？", correctId: "orange" },
+  { text: "「南瓜」屬於哪種顏色分類？", correctId: "orange" },
+  { text: "「芒果」與「鳳梨」屬於哪種顏色分類？", correctId: "orange" },
+  // 綠色 (6題)
+  { text: "哪種顏色的蔬果富含「葉綠素」，是身體的清道夫？", correctId: "green" },
+  { text: "哪種顏色的蔬果富含「兒茶素」或「葉酸」？", correctId: "green" },
+  { text: "如果你想「幫助肝臟排毒」，應該多攝取哪種顏色的蔬果？", correctId: "green" },
+  { text: "「菠菜」屬於哪種顏色，能幫助排出不好的物質？", correctId: "green" },
+  { text: "「奇異果」屬於哪種顏色分類？", correctId: "green" },
+  { text: "「芭樂」與「蘆筍」屬於哪種顏色，能強效抗氧化？", correctId: "green" },
+  // 紫黑色 (6題)
+  { text: "哪種顏色的蔬果富含「白藜蘆醇」與花青素，是抗老精靈？", correctId: "purple" },
+  { text: "對於常用3C產品的現代人，想「保護微血管與眼睛」該吃什麼顏色？", correctId: "purple" },
+  { text: "如果你想「維持記憶力與抗老化」，多吃哪種顏色的蔬果？", correctId: "purple" },
+  { text: "「茄子」屬於哪種顏色分類？", correctId: "purple" },
+  { text: "「藍莓」與「葡萄」屬於哪種顏色，能提供極佳抗氧化劑？", correctId: "purple" },
+  { text: "「黑木耳」與「黑芝麻」在植化素分類中屬於哪種顏色？", correctId: "purple" },
+  // 白色 (6題)
+  { text: "哪種顏色的蔬果富含「有機硫化物」，是溫和又強大的防禦力量？", correctId: "white" },
+  { text: "哪種顏色的蔬果富含豐富的「多醣體」？", correctId: "white" },
+  { text: "如果你想「降低發炎反應」並保護呼吸道，多吃哪種顏色？", correctId: "white" },
+  { text: "「白蘿蔔」屬於哪種顏色分類？", correctId: "white" },
+  { text: "「山藥」與「蓮藕」屬於哪種顏色分類？", correctId: "white" },
+  { text: "「冬瓜」與「白木耳」屬於哪種顏色分類？", correctId: "white" }
+];
+
+export default function App() {
+  const [activeTab, setActiveTab] = useState('learn');
+  const [selectedColor, setSelectedColor] = useState(phytoData[0]);
+  
+  // 測驗相關狀態
+  const [currentQuestion, setCurrentQuestion] = useState(null);
+  const [options, setOptions] = useState([]);
+  const [score, setScore] = useState(0);
+  const [questionCount, setQuestionCount] = useState(0);
+  const [feedback, setFeedback] = useState(null);
+  
+  // 題庫與計時器相關狀態
+  const [shuffledQuestions, setShuffledQuestions] = useState([]);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(GAME_TIME);
+  const [isGameActive, setIsGameActive] = useState(false);
+  const [isGameOver, setIsGameOver] = useState(false);
+  const [wrongAnswers, setWrongAnswers] = useState([]); // 新增：紀錄錯題
+  const timerRef = useRef(null);
+
+  // 計算正確率
+  const calculateAccuracy = () => {
+    if (questionCount === 0) return 0;
+    return Math.round((score / questionCount) * 100);
+  };
+
+  // 載入指定題目
+  const loadQuestion = (questionsList, index) => {
+    if (index >= questionsList.length) {
+      endGame(); // 30題全部答完，提早結束
+      return;
+    }
+    setCurrentQuestion(questionsList[index]);
+    setOptions(phytoData);
+    setFeedback(null);
+  };
+
+  // 開始或重新開始遊戲
+  const startGame = () => {
+    // 隨機打亂30道題目 (Fisher-Yates shuffle 概念)
+    const shuffled = [...questionBank].sort(() => Math.random() - 0.5);
+    setShuffledQuestions(shuffled);
+    setCurrentQuestionIndex(0);
+    
+    setScore(0);
+    setQuestionCount(0);
+    setTimeLeft(GAME_TIME);
+    setIsGameActive(true);
+    setIsGameOver(false);
+    setWrongAnswers([]); // 清空錯題紀錄
+    
+    loadQuestion(shuffled, 0);
+  };
+
+  // 計時器邏輯
+  useEffect(() => {
+    if (isGameActive && timeLeft > 0) {
+      timerRef.current = setInterval(() => {
+        setTimeLeft((prevTime) => prevTime - 1);
+      }, 1000);
+    } else if (timeLeft === 0 && isGameActive) {
+      endGame();
+    }
+    
+    return () => clearInterval(timerRef.current);
+  }, [isGameActive, timeLeft]);
+
+  // 遊戲結束
+  const endGame = () => {
+    setIsGameActive(false);
+    setIsGameOver(true);
+    clearInterval(timerRef.current);
+  };
+
+  // 處理答題
+  const handleAnswer = (colorId) => {
+    if (feedback || !isGameActive) return;
+
+    const isCorrect = colorId === currentQuestion.correctId;
+    const correctColorObj = phytoData.find(c => c.id === currentQuestion.correctId);
+
+    if (isCorrect) {
+      setScore(prev => prev + 1);
+      setFeedback({ isCorrect: true, message: '答對了！🎉' });
+    } else {
+      // 紀錄錯題
+      const userColorObj = phytoData.find(c => c.id === colorId);
+      setWrongAnswers(prev => [...prev, {
+        question: currentQuestion.text,
+        userAnswer: userColorObj.colorName,
+        correctAnswer: correctColorObj.colorName
+      }]);
+
+      setFeedback({ 
+        isCorrect: false, 
+        message: `答錯！答案是「${correctColorObj.colorName}」。` 
+      });
+    }
+    
+    setQuestionCount(prev => prev + 1);
+    const nextIndex = currentQuestionIndex + 1;
+    setCurrentQuestionIndex(nextIndex);
+    
+    // 縮短等待下一題的時間至 0.6 秒，極速作答體驗
+    if (timeLeft > 0) {
+        setTimeout(() => {
+            // 利用閉包內保存的題庫來讀取下一題
+            loadQuestion(shuffledQuestions, nextIndex);
+        }, 600);
+    }
+  };
+
+  // 格式化時間 (MM:SS)
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 pb-10">
+      {/* 標題區塊 */}
+      <header className="bg-white shadow-sm py-4 md:py-6 px-4 text-center sticky top-0 z-10">
+        <h1 className="text-2xl md:text-4xl font-bold mb-1 md:mb-2 flex items-center justify-center gap-2">
+          🌈 來點顏色瞧瞧
+        </h1>
+        <p className="text-sm md:text-base text-slate-500 font-medium">認識神奇的植物性營養素「植化素」</p>
+      </header>
+
+      <main className="max-w-4xl mx-auto px-2 md:px-4 mt-6">
+        
+        {/* 導覽列 */}
+        <div className="flex bg-slate-200 p-1 rounded-xl mb-6 max-w-sm mx-auto">
+          <button
+            onClick={() => {
+              setActiveTab('learn');
+              setIsGameActive(false);
+            }}
+            className={`flex-1 py-2 md:py-3 px-2 md:px-4 rounded-lg font-bold flex items-center justify-center gap-1 md:gap-2 transition-all text-sm md:text-base ${
+              activeTab === 'learn' ? 'bg-white text-emerald-600 shadow-md' : 'text-slate-500 hover:bg-slate-300'
+            }`}
+          >
+            <BookOpen size={18} />
+            植化素圖鑑
+          </button>
+          <button
+            onClick={() => setActiveTab('quiz')}
+            className={`flex-1 py-2 md:py-3 px-2 md:px-4 rounded-lg font-bold flex items-center justify-center gap-1 md:gap-2 transition-all text-sm md:text-base ${
+              activeTab === 'quiz' ? 'bg-white text-indigo-600 shadow-md' : 'text-slate-500 hover:bg-slate-300'
+            }`}
+          >
+            <HelpCircle size={18} />
+            顏色小測驗
+          </button>
+        </div>
+
+        {/* --- 學習模式 --- */}
+        {activeTab === 'learn' && (
+          <div className="animate-fade-in px-2">
+            <h2 className="text-lg md:text-xl font-bold mb-4 text-center text-slate-700">點擊顏色，發掘彩虹蔬果秘密！</h2>
+            
+            {/* 顏色選擇按鈕 */}
+            <div className="flex flex-wrap justify-center gap-2 md:gap-4 mb-6">
+              {phytoData.map((color) => (
+                <button
+                  key={color.id}
+                  onClick={() => setSelectedColor(color)}
+                  className={`w-14 h-14 md:w-20 md:h-20 rounded-full flex items-center justify-center text-2xl md:text-4xl shadow-md transition-transform hover:scale-110 focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-slate-200 ${
+                    color.bgColor
+                  } ${color.id === 'white' ? 'border-2 border-slate-300' : ''} ${
+                    selectedColor.id === color.id ? 'ring-4 ring-offset-2 ring-slate-400 scale-110' : ''
+                  }`}
+                  aria-label={color.colorName}
+                >
+                  <span className="drop-shadow-md">{color.emoji.substring(0, 2)}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* 資訊卡片 */}
+            <div className={`bg-white rounded-2xl shadow-xl overflow-hidden border-t-8 ${selectedColor.borderColor.replace('border-', 'border-t-').replace('200', '500')}`}>
+              <div className="p-5 md:p-8">
+                <div className="flex items-center gap-3 md:gap-4 mb-5">
+                  <div className={`w-12 h-12 md:w-16 md:h-16 shrink-0 rounded-full flex items-center justify-center text-2xl md:text-3xl shadow-inner ${selectedColor.bgColor} ${selectedColor.id === 'white' ? 'border border-slate-300' : ''}`}>
+                    {selectedColor.emoji.substring(0,2)}
+                  </div>
+                  <div>
+                    <h3 className={`text-xl md:text-3xl font-extrabold ${selectedColor.textColor}`}>
+                      {selectedColor.colorName}力量
+                    </h3>
+                    <p className="text-sm md:text-base text-slate-500 font-medium leading-snug mt-1">{selectedColor.description}</p>
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-4 md:gap-8">
+                  {/* 左側 */}
+                  <div className="space-y-4 md:space-y-6">
+                    <div className="bg-slate-50 p-4 md:p-5 rounded-xl border border-slate-100">
+                      <h4 className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-wider mb-1 md:mb-2">主要植化素</h4>
+                      <p className={`text-lg md:text-xl font-bold ${selectedColor.textColor}`}>{selectedColor.phytochemical}</p>
+                    </div>
+                    
+                    <div>
+                      <h4 className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-wider mb-2 md:mb-3">代表蔬果 ({selectedColor.foods.length}種)</h4>
+                      <div className="flex flex-wrap gap-1.5 md:gap-2">
+                        {selectedColor.foods.map((food, idx) => (
+                          <span key={idx} className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full text-xs md:text-sm font-medium">
+                            {food}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 右側 */}
+                  <div className="bg-slate-50 p-4 md:p-6 rounded-xl border border-slate-100">
+                    <h4 className="text-xs md:text-sm font-bold text-slate-400 uppercase tracking-wider mb-3 md:mb-4">對身體的好處</h4>
+                    <ul className="space-y-3 md:space-y-4">
+                      {selectedColor.benefits.map((benefit, idx) => (
+                        <li key={idx} className="flex items-start gap-2 md:gap-3">
+                          <CheckCircle2 className={`w-5 h-5 md:w-6 md:h-6 shrink-0 mt-0.5 ${selectedColor.textColor}`} />
+                          <span className="text-slate-700 font-medium text-base md:text-lg leading-tight">{benefit}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* --- 測驗模式 --- */}
+        {activeTab === 'quiz' && (
+          <div className="max-w-2xl mx-auto animate-fade-in px-2">
+            
+            {/* 遊戲尚未開始 */}
+            {!isGameActive && !isGameOver && (
+              <div className="bg-white rounded-2xl shadow-lg p-8 text-center border-t-8 border-indigo-500">
+                <HelpCircle className="w-16 h-16 text-indigo-500 mx-auto mb-4 opacity-80" />
+                <h2 className="text-2xl font-bold text-slate-800 mb-2">顏色小測驗挑戰</h2>
+                <p className="text-slate-500 mb-6">您有 <strong className="text-indigo-600 text-lg">60 秒</strong> 的時間，看看能答對幾題！</p>
+                <button
+                  onClick={startGame}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-full text-lg shadow-md transition-all hover:scale-105"
+                >
+                  開始挑戰
+                </button>
+              </div>
+            )}
+
+            {/* 遊戲進行中 */}
+            {isGameActive && currentQuestion && (
+              <>
+                {/* 狀態看板 (時間、分數與答對率) */}
+                <div className="bg-white rounded-xl shadow-sm p-3 md:p-4 grid grid-cols-3 gap-2 text-center mb-4 md:mb-6 border border-slate-200">
+                  <div className="flex items-center justify-center gap-1.5 text-rose-600 font-bold bg-rose-50 py-1 rounded-full">
+                    <Timer size={16} className={timeLeft <= 10 ? 'animate-pulse' : ''} />
+                    <span className={`text-base md:text-lg ${timeLeft <= 10 ? 'text-red-600' : ''}`}>
+                      {formatTime(timeLeft)}
+                    </span>
+                  </div>
+                  <div className="text-indigo-600 font-bold text-base md:text-lg bg-indigo-50 py-1 rounded-full">
+                    得分: {score}
+                  </div>
+                  <div className="text-emerald-600 font-bold text-base md:text-lg bg-emerald-50 py-1 rounded-full flex items-center justify-center gap-1">
+                    <Percent size={16} />
+                    正確率: {calculateAccuracy()}%
+                  </div>
+                </div>
+
+                {/* 題目卡片 */}
+                <div className="bg-white rounded-2xl shadow-lg p-5 md:p-8 mb-6 text-center border-t-8 border-t-indigo-500 relative overflow-hidden">
+                  
+                  {/* 回饋覆蓋層 */}
+                  {feedback && (
+                    <div className={`absolute inset-0 z-10 flex flex-col items-center justify-center animate-fade-in ${
+                      feedback.isCorrect ? 'bg-green-100/95 text-green-800' : 'bg-red-100/95 text-red-800'
+                    }`}>
+                      {feedback.isCorrect ? (
+                        <CheckCircle2 className="w-14 h-14 text-green-500 mb-1 animate-bounce-in" />
+                      ) : (
+                        <XCircle className="w-14 h-14 text-red-500 mb-1 animate-bounce-in" />
+                      )}
+                      <p className="text-lg md:text-xl font-bold">{feedback.message}</p>
+                    </div>
+                  )}
+
+                  <h2 className="text-lg md:text-2xl font-bold text-slate-800 mb-6 md:mb-8 leading-relaxed min-h-[4rem] flex items-center justify-center">
+                    {currentQuestion.text}
+                  </h2>
+                  
+                  {/* 選項區塊：一整排呈現 */}
+                  <div className="grid grid-cols-5 gap-1.5 md:gap-4">
+                    {options.map((color) => (
+                      <button
+                        key={color.id}
+                        onClick={() => handleAnswer(color.id)}
+                        disabled={feedback !== null}
+                        className={`flex flex-col items-center justify-center py-2.5 px-1 rounded-lg md:rounded-xl transition-all shadow-sm border-2 
+                          ${color.bgColor} ${color.id === 'white' ? 'border-slate-300' : 'border-transparent'} 
+                          ${feedback === null ? 'hover:-translate-y-1 hover:shadow-md cursor-pointer' : 'cursor-default'}
+                        `}
+                      >
+                        <span className="text-xl md:text-3xl mb-1 drop-shadow-sm">{color.emoji.substring(0, 2)}</span>
+                        <span className={`text-[10px] md:text-base font-bold whitespace-nowrap ${color.id === 'white' ? 'text-slate-700' : 'text-white drop-shadow-md'}`}>
+                          {color.colorName}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* 遊戲結算畫面 */}
+        {isGameOver && (
+          <div className="bg-white rounded-2xl shadow-lg p-8 text-center border-t-8 border-amber-400 animate-bounce-in">
+            <Trophy className="w-20 h-20 text-amber-400 mx-auto mb-4" />
+            <h2 className="text-3xl font-bold text-slate-800 mb-2">
+              {questionCount >= 30 ? "太強了！全部答完！" : "時間到！"}
+            </h2>
+            <div className="bg-slate-50 rounded-xl p-6 my-6 border border-slate-100 space-y-3">
+              <p className="text-slate-500 text-lg">你總共挑戰了 <strong className="text-slate-800">{questionCount}</strong> 題</p>
+                  <p className="text-2xl font-bold text-indigo-600">
+                    答對題數： <span className="text-3xl">{score}</span> 題
+                  </p>
+                  <div className="inline-flex items-center gap-1.5 text-xl font-bold text-emerald-600 bg-emerald-50 px-4 py-1.5 rounded-full">
+                    <Percent size={20} />
+                    最終正確率： {calculateAccuracy()}%
+                  </div>
+                </div>
+
+                {/* 新增：錯題回顧區塊 */}
+                {wrongAnswers.length > 0 && (
+                  <div className="mb-6 text-left bg-red-50 rounded-xl p-4 md:p-5 border border-red-100 max-h-60 overflow-y-auto shadow-inner">
+                    <h3 className="font-bold text-red-800 mb-3 flex items-center gap-2 text-lg">
+                      <BookOpen size={20} /> 錯題重點複習
+                    </h3>
+                    <ul className="space-y-3">
+                      {wrongAnswers.map((item, idx) => (
+                        <li key={idx} className="bg-white p-3 md:p-4 rounded-lg shadow-sm border border-red-50">
+                          <p className="font-bold text-slate-800 mb-2 leading-snug">{item.question}</p>
+                          <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 text-sm md:text-base">
+                            <span className="text-slate-500 flex items-center gap-1">
+                              <XCircle size={16} className="text-red-400" />
+                              你的答案: <span className="line-through">{item.userAnswer}</span>
+                            </span>
+                            <span className="text-emerald-600 font-bold flex items-center gap-1">
+                              <CheckCircle2 size={16} />
+                              正確答案: {item.correctAnswer}
+                            </span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                
+                <div className="flex flex-col sm:flex-row justify-center gap-4">
+                  <button
+                    onClick={startGame}
+                    className="flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-full shadow-md transition-all"
+                  >
+                    <RefreshCw size={20} /> 再玩一次
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('learn')}
+                    className="flex items-center justify-center gap-2 bg-white border-2 border-slate-200 text-slate-600 hover:bg-slate-50 font-bold py-3 px-6 rounded-full transition-all"
+                  >
+                    <BookOpen size={20} /> 回去複習
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+      </main>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes bounceIn {
+          0% { transform: scale(0.9); opacity: 0; }
+          50% { transform: scale(1.05); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.4s ease-out forwards;
+        }
+        .animate-bounce-in {
+          animation: bounceIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+      `}} />
+    </div>
+  );
+}
