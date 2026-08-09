@@ -104,9 +104,37 @@
     .btn-add { background: #6c757d; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 4px; }
     .btn-submit { display: block; width: 100%; background: #1f4e78; color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 8px rgba(31,78,120,0.3); text-align: center; text-decoration: none; }
     
-    /* 螢幕外渲染 PDF 模板 */
-    #pdf-template { display: none; position: absolute; top: 0; left: 0; z-index: -9999; background: #fff; }
-    .pdf-page { width: 750px; padding: 20px; font-family: "Microsoft JhengHei", "標楷體", sans-serif; background: #fff; color: #000; }
+    /* 下載時的載入遮罩動畫 */
+    #pdf-loading {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.95);
+      z-index: 99999;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+    }
+    .spinner {
+      width: 45px; height: 45px;
+      border: 5px solid #e0e0e0;
+      border-top: 5px solid #1f4e78;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    /* 螢幕外渲染 PDF 模板 (棄用 absolute left 以免截圖引擎 bug，改放最底下隱藏) */
+    #pdf-template { 
+      display: none; 
+      width: 800px;
+      background: #fff;
+      margin-top: 20px;
+    }
+    .pdf-page { width: 750px; padding: 20px; font-family: "Microsoft JhengHei", "標楷體", sans-serif; background: #fff; color: #000; margin: 0 auto; }
     .pdf-header { display: flex; justify-content: space-between; font-size: 9.5pt; line-height: 1.2; margin-bottom: 5px; }
     .pdf-title { text-align: center; font-size: 16pt; font-weight: bold; margin: 6px 0 2px 0; }
     .pdf-subtitle { text-align: center; font-size: 13pt; margin-bottom: 8px; }
@@ -121,6 +149,11 @@
   </style>
 </head>
 <body>
+
+<div id="pdf-loading">
+  <div class="spinner"></div>
+  <div style="margin-top: 15px; font-size: 18px; font-weight: bold; color: #1f4e78;">📄 PDF 產生中，請稍候...</div>
+</div>
 
 <div class="container">
   <h2>📝 出差旅費報告單 - 填報系統</h2>
@@ -200,7 +233,6 @@
   </div>
 
   <div class="section-title">💰 費用明細紀錄</div>
-  <!-- 調整：出差人數縮短，並與雜費按鈕底部對齊 -->
   <div class="row" style="align-items: flex-end;">
     <div style="flex: 0 0 130px;">
       <label>出差人數 (1~10)</label>
@@ -225,7 +257,7 @@
   <button class="btn-submit" onclick="generatePDF()">📄 產生並下載出差報告單 PDF</button>
 </div>
 
-<!-- PDF 輸出模板 -->
+<!-- PDF 輸出模板 (包含在底下，生成時短暫顯示) -->
 <div id="pdf-template">
   <div class="pdf-page" id="pdf-content">
     <div class="pdf-header">
@@ -600,6 +632,14 @@ function numberToChineseCapital(num) {
 }
 
 function generatePDF() {
+  const loadingOverlay = document.getElementById('pdf-loading');
+  const template = document.getElementById('pdf-template');
+  
+  // 1. 打開載入動畫遮罩與 PDF 模板 (放置於底層)
+  loadingOverlay.style.display = 'flex';
+  template.style.display = 'block';
+
+  // 2. 將資料綁定到 PDF 模板
   const sDate = new Date(document.getElementById('startDate').value);
   const rocY1 = (sDate.getFullYear() - 1911).toString();
 
@@ -697,21 +737,27 @@ function generatePDF() {
   const filename = `${dateNum}_出差報告單.pdf`;
 
   const element = document.getElementById('pdf-content');
-  const template = document.getElementById('pdf-template');
-  
-  template.style.display = 'block';
 
-  const opt = {
-    margin: [10, 10, 10, 10],
-    filename: filename,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, logging: false, windowWidth: 800 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
+  // 3. 【最關鍵步驟】強制延遲 500 毫秒，讓手機瀏覽器有足夠時間畫出排版
+  setTimeout(() => {
+    const opt = {
+      margin: [10, 10, 10, 10],
+      filename: filename,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, logging: false, windowWidth: 800 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
 
-  html2pdf().set(opt).from(element).save().then(() => {
-    template.style.display = 'none';
-  });
+    html2pdf().set(opt).from(element).save().then(() => {
+      // 下載完成後，關閉遮罩並隱藏模板
+      template.style.display = 'none';
+      loadingOverlay.style.display = 'none';
+    }).catch(err => {
+      template.style.display = 'none';
+      loadingOverlay.style.display = 'none';
+      alert('產生失敗，請稍後再試。');
+    });
+  }, 500);
 }
 </script>
 </body>
