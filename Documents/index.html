@@ -18,7 +18,7 @@
     
     label { font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px; color: #495057; white-space: nowrap; }
     
-    /* 復原單選框與核取方塊的原生樣式並加大，設定主題色 */
+    /* 復原單選框與核取方塊的原生樣式 */
     input[type="checkbox"], input[type="radio"] { 
       -webkit-appearance: auto !important; 
       appearance: auto !important; 
@@ -46,7 +46,7 @@
     }
     input:focus, select:focus, textarea:focus { border-color: #1f4e78; outline: none; }
     
-    /* 報帳模式單選按鈕 (視覺明顯醒目) */
+    /* 報帳模式單選按鈕 */
     .radio-group { 
       display: flex; 
       flex-direction: row; 
@@ -104,8 +104,15 @@
     .btn-add { background: #6c757d; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 4px; }
     .btn-submit { display: block; width: 100%; background: #1f4e78; color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 8px rgba(31,78,120,0.3); text-align: center; text-decoration: none; }
     
-    /* 螢幕外渲染 PDF 模板 */
-    #pdf-template { position: absolute; left: -9999px; top: 0; width: 750px; }
+    /* 螢幕外渲染 PDF 模板 (解決空白與裁切問題) */
+    #pdf-template { 
+      display: none; /* 平常完全隱藏 */
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      z-index: -9999; /* 渲染時放在畫面最底層 */
+      background: #fff;
+    }
     .pdf-page { width: 750px; padding: 20px; font-family: "Microsoft JhengHei", "標楷體", sans-serif; background: #fff; color: #000; }
     .pdf-header { display: flex; justify-content: space-between; font-size: 9.5pt; line-height: 1.2; margin-bottom: 5px; }
     .pdf-title { text-align: center; font-size: 16pt; font-weight: bold; margin: 6px 0 2px 0; }
@@ -224,7 +231,7 @@
   <button class="btn-submit" onclick="generatePDF()">📄 產生並下載出差報告單 PDF</button>
 </div>
 
-<!-- PDF 輸出模板 -->
+<!-- PDF 輸出模板 (生成時短暫顯示，確保正確抓圖) -->
 <div id="pdf-template">
   <div class="pdf-page" id="pdf-content">
     <div class="pdf-header">
@@ -366,7 +373,6 @@ function onModeChange() {
   const mode = document.querySelector('input[name="projectMode"]:checked').value;
   const config = PROJECT_CONFIG[mode];
 
-  // 更新模式按鈕外框視覺
   document.getElementById('lbl-mode-chabo').className = (mode === '茶博專案') ? 'selected' : '';
   document.getElementById('lbl-mode-gaomei').className = (mode === '高美專案') ? 'selected' : '';
 
@@ -460,7 +466,6 @@ function updateCalculation() {
   const cbLbl = document.getElementById('lblIncidental');
   const calcIncidental = cb.checked;
 
-  // 更新雜費按鈕外框視覺
   if (calcIncidental) {
     cbLbl.className = 'checkbox-label checked';
   } else {
@@ -698,16 +703,27 @@ function generatePDF() {
   const filename = `${dateNum}_出差報告單.pdf`;
 
   const element = document.getElementById('pdf-content');
+  const template = document.getElementById('pdf-template');
+  
+  // 生成前短暫將模板顯示出來，並利用 windowWidth 解決手機截圖裁切問題
+  template.style.display = 'block';
 
   const opt = {
     margin: [10, 10, 10, 10],
     filename: filename,
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, logging: false },
+    html2canvas: { 
+      scale: 2, 
+      logging: false, 
+      windowWidth: 800 // 關鍵：欺騙手機引擎使其以為有 800px 寬，確保表格不被切斷
+    },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
-  html2pdf().set(opt).from(element).save();
+  html2pdf().set(opt).from(element).save().then(() => {
+    // 下載完畢後自動隱藏回原樣
+    template.style.display = 'none';
+  });
 }
 </script>
 </body>
