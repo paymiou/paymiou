@@ -1,89 +1,600 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <title>出差旅費報告單 - 填報系統</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.52.0/build/stlite.css" />
-    <style>
-      #loading-screen {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: #f8f9fa;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        z-index: 9999;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      }
-      .spinner {
-        width: 50px;
-        height: 50px;
-        border: 5px solid #e0e0e0;
-        border-top: 5px solid #1f4e78;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin-bottom: 20px;
-      }
-      @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-      }
-      .loading-text {
-        font-size: 18px;
-        font-weight: bold;
-        color: #1f4e78;
-        margin-bottom: 8px;
-      }
-      .sub-text {
-        font-size: 14px;
-        color: #6c757d;
-        text-align: center;
-        padding: 0 20px;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="loading-screen">
-      <div class="spinner"></div>
-      <div class="loading-text">📝 出差旅費填報系統載入中...</div>
-      <div class="sub-text">首次開啟需載入 Python 運作環境與字型，請稍候約 5~10 秒</div>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>出差旅費報告單 - 填報系統</title>
+  <!-- 引入 html2pdf 庫 (轉換 A4 PDF) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", "Segoe UI", Roboto, sans-serif; }
+    body { background-color: #f4f6f9; margin: 0; padding: 12px; color: #333; }
+    .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 16px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    h2 { text-align: center; color: #1f4e78; margin-top: 0; font-size: 22px; }
+    .section-title { font-size: 16px; font-weight: bold; color: #1f4e78; border-bottom: 2px solid #1f4e78; padding-bottom: 4px; margin-top: 18px; margin-bottom: 12px; }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+    .col { flex: 1; min-width: 140px; }
+    label { font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px; color: #495057; }
+    input, select, textarea { width: 100%; padding: 8px 10px; font-size: 14px; border: 1px solid #ced4da; border-radius: 6px; background-color: #fff; }
+    input:focus, select:focus, textarea:focus { border-color: #1f4e78; outline: none; }
+    .radio-group { display: flex; gap: 15px; align-items: center; padding: 6px 0; }
+    .radio-group label { display: flex; align-items: center; gap: 4px; font-size: 15px; cursor: pointer; }
+    .info-box { background-color: #e8f4f8; border-left: 4px solid #1f4e78; padding: 10px; border-radius: 4px; font-size: 13px; margin: 10px 0; line-height: 1.5; }
+    .card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 10px; margin-bottom: 10px; position: relative; }
+    .btn-delete { position: absolute; top: 8px; right: 8px; background: #dc3545; color: #fff; border: none; border-radius: 4px; padding: 2px 8px; font-size: 12px; cursor: pointer; }
+    .btn-add { background: #6c757d; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 4px; }
+    .btn-submit { display: block; width: 100%; background: #1f4e78; color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 8px rgba(31,78,120,0.3); text-align: center; text-decoration: none; }
+    
+    /* 隱藏 PDF 印表機樣式 (生成時啟用) */
+    #pdf-template { display: none; }
+    .pdf-page { width: 750px; padding: 20px; font-family: "Microsoft JhengHei", "標楷體", sans-serif; background: #fff; color: #000; }
+    .pdf-header { display: flex; justify-content: space-between; font-size: 9.5pt; line-height: 1.2; margin-bottom: 5px; }
+    .pdf-title { text-align: center; font-size: 16pt; font-weight: bold; margin: 6px 0 2px 0; }
+    .pdf-subtitle { text-align: center; font-size: 13pt; margin-bottom: 8px; }
+    .pdf-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+    .pdf-table td, .pdf-table th { border: 1px solid #000; padding: 4px 2px; text-align: center; font-size: 12pt; vertical-align: middle; }
+    .pdf-table .text-left { text-align: left; padding-left: 4px; }
+    .pdf-table .font-10 { font-size: 10pt; line-height: 1.2; }
+    .pdf-table .font-95 { font-size: 9.5pt; line-height: 1.2; text-align: left; }
+    .approval-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .approval-table td { border: none; padding: 4px; text-align: left; font-size: 12pt; }
+    .notes-box { font-size: 9pt; line-height: 1.4; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>📝 出差旅費報告單 - 填報系統</h2>
+
+  <div class="section-title">📌 報帳模式</div>
+  <div class="radio-group">
+    <label><input type="radio" name="projectMode" value="茶博專案" checked onchange="onModeChange()"> 茶博專案</label>
+    <label><input type="radio" name="projectMode" value="高美專案" onchange="onModeChange()"> 高美專案</label>
+  </div>
+
+  <div class="section-title">👤 基本資料</div>
+  <div class="row">
+    <div class="col">
+      <label>姓名 (可留空供簽名)</label>
+      <input type="text" id="empName" placeholder="請輸入姓名">
     </div>
-    <div id="root"></div>
+    <div class="col">
+      <label>單位及職稱</label>
+      <select id="deptSelect" onchange="checkCustomInput('deptSelect', 'deptCustom')"></select>
+      <input type="text" id="deptCustom" style="display:none; margin-top:4px;" placeholder="請輸入自訂單位">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <label>出差事由</label>
+      <select id="reasonSelect" onchange="checkCustomInput('reasonSelect', 'reasonCustom')">
+        <option value="茶農拜訪">茶農拜訪</option>
+        <option value="農友拜訪">農友拜訪</option>
+        <option value="總部會議">總部會議</option>
+        <option value="custom">✍️ 其他 (手動自訂)</option>
+      </select>
+      <input type="text" id="reasonCustom" style="display:none; margin-top:4px;" placeholder="請輸入自訂事由">
+    </div>
+    <div class="col">
+      <label>出差國家城市</label>
+      <select id="citySelect" onchange="onCityChange()"></select>
+      <input type="text" id="cityCustom" style="display:none; margin-top:4px;" placeholder="請輸入自訂城市" oninput="updateCalculation()">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <label>付款方式</label>
+      <select id="paySelect" onchange="checkCustomInput('paySelect', 'payCustom')">
+        <option value="個人">個人</option>
+        <option value="匯款">匯款</option>
+        <option value="領現金">領現金</option>
+        <option value="custom">✍️ 其他 (手動自訂)</option>
+      </select>
+      <input type="text" id="payCustom" style="display:none; margin-top:4px;" placeholder="請輸入自訂付款方式">
+    </div>
+  </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.52.0/build/stlite.js"></script>
-    <script>
-      stlite.mount(
-        {
-          requirements: ["reportlab"],
-          entrypoint: "app.py",
-          files: {
-            "app.py": {
-              url: "./app.py",
-            },
-          },
-        },
-        document.getElementById("root")
-      );
+  <div class="section-title">📅 出差時間與單據</div>
+  <div class="row">
+    <div class="col">
+      <label>出差起始日期 (起)</label>
+      <input type="date" id="startDate" onchange="onStartDateChange()">
+    </div>
+    <div class="col">
+      <label>出差截止日期 (迄)</label>
+      <input type="date" id="endDate" onchange="updateDays()">
+    </div>
+  </div>
+  <div class="row">
+    <div class="col">
+      <label>共計天數</label>
+      <input type="text" id="totalDays" value="1">
+    </div>
+    <div class="col">
+      <label>附單據張數</label>
+      <input type="text" id="totalReceipts" value="1">
+    </div>
+  </div>
 
-      // 當 Streamlit 元素載入完成後隱藏提示畫面
-      const observer = new MutationObserver((mutations, obs) => {
-        const root = document.getElementById('root');
-        if (root && root.children.length > 0) {
-          const loadingScreen = document.getElementById('loading-screen');
-          if (loadingScreen) {
-            loadingScreen.style.opacity = '0';
-            loadingScreen.style.transition = 'opacity 0.5s ease';
-            setTimeout(() => loadingScreen.remove(), 500);
-          }
-          obs.disconnect();
-        }
-      });
-      observer.observe(document.getElementById('root'), { childList: true, subtree: true });
-    </script>
-  </body>
+  <div class="section-title">💰 費用明細紀錄</div>
+  <div class="row">
+    <div class="col">
+      <label>出差人數 (1~10人)</label>
+      <input type="number" id="numPeople" value="1" min="1" max="10" onchange="updateCalculation()">
+    </div>
+    <div class="col" style="display:flex; align-items:flex-end;">
+      <label style="cursor:pointer;"><input type="checkbox" id="calcIncidental" checked onchange="updateCalculation()"> 計算每人 400 元雜費</label>
+    </div>
+  </div>
+
+  <div class="info-box" id="previewBox">預覽載入中...</div>
+
+  <div id="expensesContainer"></div>
+  <button class="btn-add" onclick="addExpenseRow()">➕ 新增一筆費用</button>
+
+  <div class="section-title">📋 出差報告紀錄</div>
+  <div id="reportsContainer"></div>
+  <button class="btn-add" onclick="addReportRow()">➕ 新增一筆報告</button>
+
+  <button class="btn-submit" onclick="generatePDF()">📄 產生並下載出差報告單 PDF</button>
+</div>
+
+<!-- PDF 輸出 HTML 模板 -->
+<div id="pdf-template">
+  <div class="pdf-page" id="pdf-content">
+    <div class="pdf-header">
+      <div>編號：4-AB-c023(1.0)<br/>版次：1.0</div>
+      <div style="font-size:12pt; font-weight:bold; text-align:center;">國內外出差旅費報告單</div>
+      <div style="text-align:right;">制定單位：幕僚總部人資課<br/>修訂日期：2019/09/10</div>
+    </div>
+    <div class="pdf-title">財團法人慈心有機農業發展基金會</div>
+    <div class="pdf-subtitle">國內外出差旅費報告單</div>
+
+    <table class="pdf-table">
+      <tr style="height:30px;">
+        <td style="width:50px;">姓 名</td>
+        <td colspan="5" class="text-left" id="p-name" style="width:260px;"></td>
+        <td colspan="2" class="font-10" style="width:110px;">單位代號名稱及職稱</td>
+        <td colspan="4" class="text-left" id="p-dept"></td>
+      </tr>
+      <tr style="height:30px;">
+        <td class="font-10">出差事由</td>
+        <td colspan="5" class="text-left font-10" id="p-reason"></td>
+        <td colspan="2" class="font-10">出差國家及城市</td>
+        <td colspan="4" class="text-left" id="p-city"></td>
+      </tr>
+      <tr style="height:30px;">
+        <td class="font-10">出差時間</td>
+        <td colspan="11" class="text-left font-10" id="p-time"></td>
+      </tr>
+      <tr style="height:25px;">
+        <td id="p-year" style="width:40px;"></td>
+        <td colspan="2">行 程</td>
+        <td colspan="3">交 通 費</td>
+        <td>膳 費</td>
+        <td>宿 費</td>
+        <td colspan="2">其 他 費 用</td>
+        <td class="font-10">私車油資<br/>補貼</td>
+        <td>合 計</td>
+      </tr>
+      <tr style="height:25px;">
+        <td>月</td>
+        <td>日</td>
+        <td></td>
+        <td class="font-10">大眾交通工具</td>
+        <td class="font-10">飛機</td>
+        <td class="font-10">計程車</td>
+        <td></td>
+        <td></td>
+        <td>摘 要</td>
+        <td>金額</td>
+        <td></td>
+        <td></td>
+      </tr>
+      <tbody id="pdf-expenses-rows"></tbody>
+      <tr style="height:30px;">
+        <td colspan="11">總 計</td>
+        <td id="p-total-amt"></td>
+      </tr>
+      <tr style="height:25px;">
+        <td colspan="12" style="font-weight:bold;">出 差 報 告</td>
+      </tr>
+      <tr style="height:25px;">
+        <td id="p-year-rep"></td>
+        <td colspan="5">訪洽公司/機構名稱及接洽人員姓名</td>
+        <td colspan="6">洽 辦 事 項 說 明</td>
+      </tr>
+      <tr style="height:25px;">
+        <td>月</td>
+        <td>日</td>
+        <td colspan="4"></td>
+        <td colspan="6"></td>
+      </tr>
+      <tbody id="pdf-reports-rows"></tbody>
+    </table>
+
+    <table class="approval-table">
+      <tr style="height:30px;">
+        <td style="width:33%;">核定：</td>
+        <td style="width:33%;">覆核：</td>
+        <td style="width:34%;">出差人：</td>
+      </tr>
+      <tr style="height:30px;">
+        <td colspan="3" id="p-pay-method">款付旅行社金額：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;款付 ■個人 □匯款 / □領現金金額：</td>
+      </tr>
+      <tr style="height:35px;">
+        <td colspan="2" id="p-capital-text">茲領到上列旅費計新台幣 元整</td>
+        <td>領款人簽章：</td>
+      </tr>
+    </table>
+
+    <div class="notes-box">
+      備註：<br/>
+      1. 依稅法規定，出差報告請逐日填寫，並附相關業務報告<br/>
+      2. 若有出差前已核准簽呈請註明簽呈代號於出差事由欄位中。<br/>
+      3. 若為國外差旅申請請註明外幣、換算後台幣及匯率。設算匯率以出國當日台灣銀行兌匯匯率計之，並說明計算式。<br/>
+      4. 交通費請附相關票根、登機證、旅行社代收轉付收據等憑證。過路費屬其他費用，需附記錄證明。<br/>
+      5. 膳費及宿費請附發票或收據。
+    </div>
+  </div>
+</div>
+
+<script>
+const PROJECT_CONFIG = {
+  "茶博專案": {
+    dept: "茶博 610055",
+    default_city: "南投草屯",
+    default_reason: "茶農拜訪",
+    cities: ["南投草屯", "南投", "南投名間", "南投竹山"],
+    fares: {
+      "南投草屯": { type: "客運", name: "草屯", fare: 202 },
+      "南投": { type: "客運", name: "南投", fare: 212 },
+      "南投名間": { type: "客運", name: "名間", fare: 322 },
+      "南投竹山": { type: "客運", name: "竹山", fare: 296 }
+    }
+  },
+  "高美專案": {
+    dept: "高美生態 620038",
+    default_city: "台中清水",
+    default_reason: "農友拜訪",
+    cities: ["台中清水", "台中豐原"],
+    fares: {
+      "台中清水": { type: "火車", name: "清水", fare: 134 },
+      "台中豐原": { type: "火車", name: "豐原", fare: 96 }
+    }
+  }
+};
+
+let expenseCount = 0;
+let reportCount = 0;
+
+window.onload = function() {
+  const todayStr = new Date().toISOString().split('T')[0];
+  document.getElementById('startDate').value = todayStr;
+  document.getElementById('endDate').value = todayStr;
+  onModeChange();
+  addExpenseRow(true);
+  addReportRow(true);
+};
+
+function onModeChange() {
+  const mode = document.querySelector('input[name="projectMode"]:checked').value;
+  const config = PROJECT_CONFIG[mode];
+
+  const deptSel = document.getElementById('deptSelect');
+  deptSel.innerHTML = `<option value="${config.dept}">${config.dept}</option><option value="custom">✍️ 其他 (手動自訂)</option>`;
+  document.getElementById('deptCustom').style.display = 'none';
+
+  const reasonSel = document.getElementById('reasonSelect');
+  reasonSel.value = config.default_reason;
+  checkCustomInput('reasonSelect', 'reasonCustom');
+
+  const citySel = document.getElementById('citySelect');
+  citySel.innerHTML = config.cities.map(c => `<option value="${c}">${c}</option>`).join('') + `<option value="custom">✍️ 其他 (手動自訂)</option>`;
+  document.getElementById('cityCustom').style.display = 'none';
+
+  updateCalculation();
+}
+
+function onStartDateChange() {
+  document.getElementById('endDate').value = document.getElementById('startDate').value;
+  updateDays();
+}
+
+function updateDays() {
+  const s = new Date(document.getElementById('startDate').value);
+  const e = new Date(document.getElementById('endDate').value);
+  const diffTime = Math.abs(e - s);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+  document.getElementById('totalDays').value = isNaN(diffDays) ? 1 : diffDays;
+  updateCalculation();
+}
+
+function checkCustomInput(selectId, customInputId) {
+  const sel = document.getElementById(selectId);
+  const inp = document.getElementById(customInputId);
+  if (sel.value === 'custom') {
+    inp.style.display = 'block';
+  } else {
+    inp.style.display = 'none';
+  }
+  updateCalculation();
+}
+
+function onCityChange() {
+  checkCustomInput('citySelect', 'cityCustom');
+  updateCalculation();
+}
+
+function getSelectedVal(selectId, customInputId) {
+  const sel = document.getElementById(selectId);
+  if (sel.value === 'custom') {
+    return document.getElementById(customInputId).value;
+  }
+  return sel.value;
+}
+
+function updateCalculation() {
+  const mode = document.querySelector('input[name="projectMode"]:checked').value;
+  const config = PROJECT_CONFIG[mode];
+  const city = getSelectedVal('citySelect', 'cityCustom');
+  const numPeople = parseInt(document.getElementById('numPeople').value) || 1;
+  const calcIncidental = document.getElementById('calcIncidental').checked;
+
+  let totalTransit = 0;
+  let detailStr = "";
+  let standardRoute = "";
+
+  if (config.fares[city]) {
+    const info = config.fares[city];
+    totalTransit = info.fare * numPeople;
+    detailStr = `台中到${info.name}${info.type} ${info.fare}元(來回)x${numPeople}人=${totalTransit}元`;
+    standardRoute = `台中到${city}來回`;
+  } else {
+    totalTransit = 0;
+    detailStr = `出差至${city}`;
+    standardRoute = city ? `台中到${city}來回` : "台中來回";
+  }
+
+  const totalIncidental = calcIncidental ? (400 * numPeople) : 0;
+
+  document.getElementById('previewBox').innerHTML = `💡 <b>自動計算預覽</b>：<br/>- 大眾交通：<b>${totalTransit} 元</b> (${standardRoute})<br/>- 雜費金額：<b>${totalIncidental} 元</b><br/>- 洽辦說明：${detailStr}`;
+
+  // 更新第一筆費用與報告
+  const firstExpRoute = document.getElementById('exp_route_1');
+  if (firstExpRoute) firstExpRoute.value = standardRoute;
+
+  const firstExpPub = document.getElementById('exp_pub_1');
+  if (firstExpPub) firstExpPub.value = totalTransit || "";
+
+  const firstExpAmt = document.getElementById('exp_amt_1');
+  if (firstExpAmt) firstExpAmt.value = totalIncidental || "";
+
+  const firstRepDetail = document.getElementById('rep_detail_1');
+  if (firstRepDetail) firstRepDetail.value = detailStr;
+}
+
+function addExpenseRow(isFirst = false) {
+  if (expenseCount >= 6) return alert('費用項目最多新增 6 筆');
+  expenseCount++;
+  const id = expenseCount;
+
+  const sDate = new Date(document.getElementById('startDate').value);
+  const m = (sDate.getMonth() + 1).toString();
+  const d = sDate.getDate().toString();
+
+  const container = document.getElementById('expensesContainer');
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.id = `exp_card_${id}`;
+  card.innerHTML = `
+    ${!isFirst ? `<button class="btn-delete" onclick="removeCard('exp_card_${id}', 'exp')">✕ 刪除</button>` : ''}
+    <div style="font-weight:bold; font-size:13px; margin-bottom:6px;">費用項目 #${id}</div>
+    <div class="row">
+      <div class="col"><label>月份</label><input type="text" id="exp_m_${id}" value="${m}"></div>
+      <div class="col"><label>日期</label><input type="text" id="exp_d_${id}" value="${d}"></div>
+      <div class="col" style="flex:2;"><label>行程</label><input type="text" id="exp_route_${id}"></div>
+    </div>
+    <div class="row">
+      <div class="col"><label>大眾交通金額</label><input type="text" id="exp_pub_${id}"></div>
+      <div class="col">
+        <label>摘要</label>
+        <select id="exp_desc_${id}">
+          <option value="雜費" ${isFirst ? 'selected' : ''}>雜費</option>
+          <option value="公務車">公務車</option>
+          <option value="過路費">過路費</option>
+          <option value="" ${!isFirst ? 'selected' : ''}>空白</option>
+        </select>
+      </div>
+      <div class="col"><label>雜費金額</label><input type="text" id="exp_amt_${id}"></div>
+    </div>
+  `;
+  container.appendChild(card);
+  if (isFirst) updateCalculation();
+}
+
+function addReportRow(isFirst = false) {
+  if (reportCount >= 3) return alert('報告紀錄最多新增 3 筆');
+  reportCount++;
+  const id = reportCount;
+
+  const sDate = new Date(document.getElementById('startDate').value);
+  const m = (sDate.getMonth() + 1).toString();
+  const d = sDate.getDate().toString();
+
+  const container = document.getElementById('reportsContainer');
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.id = `rep_card_${id}`;
+  card.innerHTML = `
+    ${!isFirst ? `<button class="btn-delete" onclick="removeCard('rep_card_${id}', 'rep')">✕ 刪除</button>` : ''}
+    <div style="font-weight:bold; font-size:13px; margin-bottom:6px;">洽辦紀錄 #${id}</div>
+    <div class="row">
+      <div class="col"><label>月份</label><input type="text" id="rep_m_${id}" value="${m}"></div>
+      <div class="col"><label>日期</label><input type="text" id="rep_d_${id}" value="${d}"></div>
+    </div>
+    <div class="row">
+      <div class="col"><label>接洽人員 (可換行)</label><textarea id="rep_target_${id}" rows="2"></textarea></div>
+    </div>
+    <div class="row">
+      <div class="col"><label>洽辦事項說明</label><input type="text" id="rep_detail_${id}"></div>
+    </div>
+  `;
+  container.appendChild(card);
+  if (isFirst) updateCalculation();
+}
+
+function removeCard(cardId, type) {
+  document.getElementById(cardId).remove();
+}
+
+function numberToChineseCapital(num) {
+  num = parseInt(num) || 0;
+  if (num === 0) return "零";
+  const digits = ["零", "壹", "貳", "參", "肆", "伍", "陸", "柒", "捌", "玖"];
+  const units = ["", "拾", "佰", "仟"];
+  const bigUnits = ["", "萬", "億"];
+  let str = num.toString();
+  let len = str.length;
+  let res = "";
+  for (let i = 0; i < len; i++) {
+    let n = parseInt(str[i]);
+    let pos = len - 1 - i;
+    let u = pos % 4;
+    let bu = Math.floor(pos / 4);
+    if (n !== 0) {
+      res += digits[n] + units[u];
+    } else {
+      if (!res.endsWith("零") && u !== 0) res += "零";
+    }
+    if (u === 0 && bu > 0) {
+      if (res.endsWith("零")) res = res.slice(0, -1);
+      res += bigUnits[bu];
+    }
+  }
+  return res.replace(/零+$/, "");
+}
+
+function generatePDF() {
+  const sDate = new Date(document.getElementById('startDate').value);
+  const rocY1 = (sDate.getFullYear() - 1911).toString();
+
+  document.getElementById('p-name').innerText = document.getElementById('empName').value;
+  document.getElementById('p-dept').innerText = getSelectedVal('deptSelect', 'deptCustom');
+  document.getElementById('p-reason').innerText = getSelectedVal('reasonSelect', 'reasonCustom');
+  document.getElementById('p-city').innerText = getSelectedVal('citySelect', 'cityCustom');
+
+  const m1 = (sDate.getMonth() + 1).toString();
+  const d1 = sDate.getDate().toString();
+  const eDate = new Date(document.getElementById('endDate').value);
+  const rocY2 = (eDate.getFullYear() - 1911).toString();
+  const m2 = (eDate.getMonth() + 1).toString();
+  const d2 = eDate.getDate().toString();
+  const days = document.getElementById('totalDays').value;
+  const receipts = document.getElementById('totalReceipts').value;
+
+  document.getElementById('p-time').innerText = `民國 ${rocY1} 年 ${m1} 月 ${d1} 日起至民國 ${rocY2} 年 ${m2} 月 ${d2} 日止共計 ${days} 天/附單據 ${receipts} 張/匯率：`;
+  document.getElementById('p-year').innerText = `${rocY1} 年`;
+  document.getElementById('p-year-rep').innerText = `${rocY1} 年`;
+
+  // 渲染費用明細 (填寫筆數 + 1 筆空白列)
+  const expTbody = document.getElementById('pdf-expenses-rows');
+  expTbody.innerHTML = "";
+  let totalAmt = 0;
+
+  const expCards = document.querySelectorAll('#expensesContainer .card');
+  expCards.forEach(card => {
+    const id = card.id.replace('exp_card_', '');
+    const m = document.getElementById(`exp_m_${id}`)?.value || "";
+    const d = document.getElementById(`exp_d_${id}`)?.value || "";
+    const route = document.getElementById(`exp_route_${id}`)?.value || "";
+    const pub = parseInt(document.getElementById(`exp_pub_${id}`)?.value) || 0;
+    const desc = document.getElementById(`exp_desc_${id}`)?.value || "";
+    const amt = parseInt(document.getElementById(`exp_amt_${id}`)?.value) || 0;
+
+    const rowTotal = pub + amt;
+    totalAmt += rowTotal;
+
+    const tr = document.createElement('tr');
+    tr.style.height = "35px";
+    tr.innerHTML = `
+      <td>${m}</td><td>${d}</td><td class="text-left font-10">${route}</td>
+      <td>${pub || ''}</td><td></td><td></td><td></td><td></td>
+      <td>${desc}</td><td>${amt || ''}</td><td class="font-10"></td>
+      <td>${rowTotal || ''}</td>
+    `;
+    expTbody.appendChild(tr);
+  });
+
+  // 1 筆空白列
+  const emptyTr = document.createElement('tr');
+  emptyTr.style.height = "35px";
+  emptyTr.innerHTML = `<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>`;
+  expTbody.appendChild(emptyTr);
+
+  document.getElementById('p-total-amt').innerText = totalAmt || 0;
+
+  // 渲染報告紀錄 (填寫筆數 + 1 筆空白列)
+  const repTbody = document.getElementById('pdf-reports-rows');
+  repTbody.innerHTML = "";
+
+  const repCards = document.querySelectorAll('#reportsContainer .card');
+  repCards.forEach(card => {
+    const id = card.id.replace('rep_card_', '');
+    const m = document.getElementById(`rep_m_${id}`)?.value || "";
+    const d = document.getElementById(`rep_d_${id}`)?.value || "";
+    const target = (document.getElementById(`rep_target_${id}`)?.value || "").replace(/\n/g, '<br/>');
+    const detail = document.getElementById(`rep_detail_${id}`)?.value || "";
+
+    const tr = document.createElement('tr');
+    tr.style.height = "48px";
+    tr.innerHTML = `
+      <td>${m}</td><td>${d}</td>
+      <td colspan="4" class="font-95">${target}</td>
+      <td colspan="6" class="text-left">${detail}</td>
+    `;
+    repTbody.appendChild(tr);
+  });
+
+  // 1 筆空白報告列
+  const emptyRepTr = document.createElement('tr');
+  emptyRepTr.style.height = "48px";
+  emptyRepTr.innerHTML = `<td></td><td></td><td colspan="4"></td><td colspan="6"></td>`;
+  repTbody.appendChild(emptyRepTr);
+
+  // 付款方式標記
+  const payMethod = getSelectedVal('paySelect', 'payCustom');
+  let payStr = "款付 ■個人 □匯款 / □領現金金額：";
+  if (payMethod === '匯款') payStr = "款付 □個人 ■匯款 / □領現金金額：";
+  if (payMethod === '領現金') payStr = "款付 □個人 □匯款 / ■領現金金額：";
+  document.getElementById('p-pay-method').innerHTML = `款付旅行社金額：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${payStr}`;
+
+  // 大寫金額 16PT
+  const capital = numberToChineseCapital(totalAmt);
+  document.getElementById('p-capital-text').innerHTML = `茲領到上列旅費計新台幣 <span style="font-size:16pt; font-weight:bold;">${capital}</span> 元整`;
+
+  // 檔名：YYYYMMDD_出差報告單.pdf
+  const dateNum = sDate.getFullYear().toString() +
+    (sDate.getMonth() + 1).toString().padStart(2, '0') +
+    sDate.getDate().toString().padStart(2, '0');
+  const filename = `${dateNum}_出差報告單.pdf`;
+
+  const element = document.getElementById('pdf-content');
+  const template = document.getElementById('pdf-template');
+  template.style.display = 'block';
+
+  const opt = {
+    margin: [10, 10, 10, 10],
+    filename: filename,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2, logging: false },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(element).save().then(() => {
+    template.style.display = 'none';
+  });
+}
+</script>
+</body>
 </html>
