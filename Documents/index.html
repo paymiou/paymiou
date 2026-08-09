@@ -18,8 +18,18 @@
     
     label { font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px; color: #495057; white-space: nowrap; }
     
-    /* 統一所有輸入框樣式與高度，解決手機版 Date 寬度不一致問題 */
-    input, select, textarea { 
+    /* 復原單選框與核取方塊的原生樣式並加大，設定主題色 */
+    input[type="checkbox"], input[type="radio"] { 
+      -webkit-appearance: auto !important; 
+      appearance: auto !important; 
+      width: 18px !important; 
+      height: 18px !important; 
+      accent-color: #1f4e78; 
+      cursor: pointer;
+      margin: 0;
+    }
+
+    input[type="text"], input[type="number"], input[type="date"], select, textarea { 
       width: 100%; 
       padding: 8px 10px; 
       font-size: 14px; 
@@ -36,11 +46,12 @@
     }
     input:focus, select:focus, textarea:focus { border-color: #1f4e78; outline: none; }
     
+    /* 報帳模式單選按鈕 (視覺明顯醒目) */
     .radio-group { 
       display: flex; 
       flex-direction: row; 
       flex-wrap: nowrap; 
-      gap: 24px; 
+      gap: 12px; 
       align-items: center; 
       padding: 6px 0; 
       overflow-x: auto;
@@ -48,16 +59,43 @@
     .radio-group label { 
       display: inline-flex; 
       align-items: center; 
-      gap: 6px; 
-      font-size: 16px; 
+      gap: 8px; 
+      font-size: 15px; 
       font-weight: bold; 
       cursor: pointer; 
       white-space: nowrap; 
+      padding: 8px 16px;
+      border: 2px solid #ced4da;
+      border-radius: 8px;
+      background-color: #f8f9fa;
+      transition: all 0.2s ease;
     }
-    .radio-group input[type="radio"] {
-      width: auto;
-      margin: 0;
+    .radio-group label.selected {
+      border-color: #1f4e78;
+      background-color: #e8f4f8;
+      color: #1f4e78;
+      box-shadow: 0 0 0 1px #1f4e78;
+    }
+
+    /* 雜費勾選方塊視覺卡片 */
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border: 2px solid #ced4da;
+      border-radius: 8px;
+      background-color: #f8f9fa;
       cursor: pointer;
+      font-size: 13px;
+      font-weight: bold;
+      transition: all 0.2s ease;
+      width: 100%;
+    }
+    .checkbox-label.checked {
+      border-color: #1f4e78;
+      background-color: #e8f4f8;
+      color: #1f4e78;
     }
 
     .info-box { background-color: #e8f4f8; border-left: 4px solid #1f4e78; padding: 10px; border-radius: 4px; font-size: 13px; margin: 10px 0; line-height: 1.5; }
@@ -89,8 +127,12 @@
 
   <div class="section-title">📌 報帳模式</div>
   <div class="radio-group">
-    <label><input type="radio" name="projectMode" value="茶博專案" checked onchange="onModeChange()"> 茶博專案</label>
-    <label><input type="radio" name="projectMode" value="高美專案" onchange="onModeChange()"> 高美專案</label>
+    <label id="lbl-mode-chabo" class="selected">
+      <input type="radio" name="projectMode" value="茶博專案" checked onchange="onModeChange()"> 茶博專案
+    </label>
+    <label id="lbl-mode-gaomei">
+      <input type="radio" name="projectMode" value="高美專案" onchange="onModeChange()"> 高美專案
+    </label>
   </div>
 
   <div class="section-title">👤 基本資料</div>
@@ -164,7 +206,9 @@
       <input type="number" id="numPeople" value="1" min="1" max="10" onchange="updateCalculation()">
     </div>
     <div class="col" style="display:flex; align-items:flex-end;">
-      <label style="cursor:pointer;"><input type="checkbox" id="calcIncidental" checked onchange="updateCalculation()" style="width:auto;"> 計算每人 400 元雜費</label>
+      <label id="lblIncidental" class="checkbox-label checked">
+        <input type="checkbox" id="calcIncidental" checked onchange="updateCalculation()"> 計算每人 400 元雜費
+      </label>
     </div>
   </div>
 
@@ -322,6 +366,10 @@ function onModeChange() {
   const mode = document.querySelector('input[name="projectMode"]:checked').value;
   const config = PROJECT_CONFIG[mode];
 
+  // 更新模式按鈕外框視覺
+  document.getElementById('lbl-mode-chabo').className = (mode === '茶博專案') ? 'selected' : '';
+  document.getElementById('lbl-mode-gaomei').className = (mode === '高美專案') ? 'selected' : '';
+
   const deptSel = document.getElementById('deptSelect');
   deptSel.innerHTML = `<option value="${config.dept}">${config.dept}</option><option value="custom">✍️ 其他 (手動自訂)</option>`;
   document.getElementById('deptCustom').style.display = 'none';
@@ -407,7 +455,17 @@ function updateCalculation() {
   const config = PROJECT_CONFIG[mode];
   const city = getSelectedVal('citySelect', 'cityCustom');
   const numPeople = parseInt(document.getElementById('numPeople').value) || 1;
-  const calcIncidental = document.getElementById('calcIncidental').checked;
+  
+  const cb = document.getElementById('calcIncidental');
+  const cbLbl = document.getElementById('lblIncidental');
+  const calcIncidental = cb.checked;
+
+  // 更新雜費按鈕外框視覺
+  if (calcIncidental) {
+    cbLbl.className = 'checkbox-label checked';
+  } else {
+    cbLbl.className = 'checkbox-label';
+  }
 
   let totalTransit = 0;
   let detailStr = "";
