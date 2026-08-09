@@ -55,12 +55,11 @@
     .btn-add { background: #6c757d; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 4px; }
     .btn-submit { display: block; width: 100%; background: #1f4e78; color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 8px rgba(31,78,120,0.3); text-align: center; text-decoration: none; }
     
-    /* 響應式微調：手機裝置允許分行 */
     @media (max-width: 640px) {
       .row { flex-wrap: wrap; }
     }
 
-    /* 載入遮罩，放在最頂層 */
+    /* 載入遮罩 */
     #pdf-loading { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 99999; flex-direction: column; justify-content: center; align-items: center; }
     .spinner { width: 45px; height: 45px; border: 5px solid #e0e0e0; border-top: 5px solid #1f4e78; border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
@@ -232,7 +231,8 @@
     <div class="pdf-subtitle">國內外出差旅費報告單</div>
 
     <table class="pdf-table">
-      <tr style="height:28px;">
+      <!-- 姓名欄高加大至 42px 方便手寫簽名 -->
+      <tr style="height:42px;">
         <td style="width:45px;">姓 名</td>
         <td colspan="5" class="text-left" id="p-name" style="width:220px;"></td>
         <td colspan="2" class="font-10" style="width:100px;">單位代號名稱及職稱</td>
@@ -250,27 +250,24 @@
       </tr>
       <tr style="height:24px;">
         <td id="p-year" colspan="2" style="width:50px;"></td>
-        <td colspan="1" style="width:140px;">行 程</td>
+        <!-- 行程、膳費、宿費、私車油資補貼、合計設定 rowspan="2" 合併下方空格 -->
+        <td rowspan="2" style="width:155px;">行 程</td>
         <td colspan="3">交 通 費</td>
-        <td style="width:40px;">膳 費</td>
-        <td style="width:40px;">宿 費</td>
+        <td rowspan="2" style="width:35px;">膳 費</td>
+        <td rowspan="2" style="width:35px;">宿 費</td>
         <td colspan="2">其 他 費 用</td>
-        <td class="font-10" style="width:48px;">私車油資<br/>補貼</td>
-        <td style="width:55px;">合 計</td>
+        <td rowspan="2" class="font-10" style="width:44px;">私車油資<br/>補貼</td>
+        <td rowspan="2" style="width:45px;">合 計</td>
       </tr>
       <tr style="height:24px;">
         <td style="width:25px;">月</td>
         <td style="width:25px;">日</td>
-        <td></td>
-        <td class="font-10" style="width:50px;">大眾交通工具</td>
-        <td class="font-10" style="width:35px;">飛機</td>
-        <td class="font-10" style="width:40px;">計程車</td>
-        <td></td>
-        <td></td>
-        <td style="width:45px;">摘 要</td>
-        <td style="width:45px;">金額</td>
-        <td></td>
-        <td></td>
+        <td class="font-10" style="width:48px;">大眾交通工具</td>
+        <td class="font-10" style="width:32px;">飛機</td>
+        <td class="font-10" style="width:36px;">計程車</td>
+        <!-- 摘要、金額欄寬縮小 -->
+        <td class="font-10" style="width:38px;">摘 要</td>
+        <td class="font-10" style="width:38px;">金 額</td>
       </tr>
       <tbody id="pdf-expenses-rows"></tbody>
       <tr style="height:28px;">
@@ -282,14 +279,13 @@
       </tr>
       <tr style="height:24px;">
         <td id="p-year-rep" colspan="2"></td>
-        <td colspan="4">訪洽公司/機構名稱及接洽人員姓名</td>
-        <td colspan="6">洽 辦 事 項 說 明</td>
+        <!-- 出差報告標頭與下方空格進行 rowspan="2" 合併 -->
+        <td colspan="4" rowspan="2" class="font-10">訪洽公司/機構名稱及接洽人員姓名</td>
+        <td colspan="6" rowspan="2" class="font-10">洽 辦 事 項 說 明</td>
       </tr>
       <tr style="height:24px;">
         <td>月</td>
         <td>日</td>
-        <td colspan="4"></td>
-        <td colspan="6"></td>
       </tr>
       <tbody id="pdf-reports-rows"></tbody>
     </table>
@@ -619,7 +615,7 @@ function generatePDF() {
 
     const tr = document.createElement('tr');
     tr.style.height = "32px";
-    tr.innerHTML = `<td>${m}</td><td>${d}</td><td class="text-left font-10">${route}</td><td>${pub || ''}</td><td></td><td></td><td></td><td></td><td>${desc}</td><td>${amt || ''}</td><td class="font-10"></td><td>${rowTotal || ''}</td>`;
+    tr.innerHTML = `<td>${m}</td><td>${d}</td><td class="text-left font-10" style="white-space:nowrap;">${route}</td><td>${pub || ''}</td><td></td><td></td><td></td><td></td><td>${desc}</td><td>${amt || ''}</td><td class="font-10"></td><td>${rowTotal || ''}</td>`;
     expTbody.appendChild(tr);
   });
 
