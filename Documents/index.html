@@ -39,10 +39,7 @@
       box-sizing: border-box;
       -webkit-appearance: none;
       appearance: none;
-    }
-    input[type="date"] {
       min-height: 38px;
-      line-height: 1.2;
     }
     input:focus, select:focus, textarea:focus { border-color: #1f4e78; outline: none; }
     
@@ -69,6 +66,7 @@
       border-radius: 8px;
       background-color: #f8f9fa;
       transition: all 0.2s ease;
+      margin-bottom: 0;
     }
     .radio-group label.selected {
       border-color: #1f4e78;
@@ -91,6 +89,8 @@
       font-weight: bold;
       transition: all 0.2s ease;
       width: 100%;
+      min-height: 38px;
+      margin-bottom: 0;
     }
     .checkbox-label.checked {
       border-color: #1f4e78;
@@ -104,15 +104,8 @@
     .btn-add { background: #6c757d; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 4px; }
     .btn-submit { display: block; width: 100%; background: #1f4e78; color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 8px rgba(31,78,120,0.3); text-align: center; text-decoration: none; }
     
-    /* 螢幕外渲染 PDF 模板 (解決空白與裁切問題) */
-    #pdf-template { 
-      display: none; /* 平常完全隱藏 */
-      position: absolute; 
-      top: 0; 
-      left: 0; 
-      z-index: -9999; /* 渲染時放在畫面最底層 */
-      background: #fff;
-    }
+    /* 螢幕外渲染 PDF 模板 */
+    #pdf-template { display: none; position: absolute; top: 0; left: 0; z-index: -9999; background: #fff; }
     .pdf-page { width: 750px; padding: 20px; font-family: "Microsoft JhengHei", "標楷體", sans-serif; background: #fff; color: #000; }
     .pdf-header { display: flex; justify-content: space-between; font-size: 9.5pt; line-height: 1.2; margin-bottom: 5px; }
     .pdf-title { text-align: center; font-size: 16pt; font-weight: bold; margin: 6px 0 2px 0; }
@@ -198,21 +191,22 @@
   <div class="row">
     <div class="col">
       <label>共計天數</label>
-      <input type="text" id="totalDays" value="1">
+      <input type="text" id="totalDays" value="1" style="text-align: center;">
     </div>
     <div class="col">
       <label>附單據張數</label>
-      <input type="text" id="totalReceipts" value="1">
+      <input type="text" id="totalReceipts" value="1" style="text-align: center;">
     </div>
   </div>
 
   <div class="section-title">💰 費用明細紀錄</div>
-  <div class="row">
-    <div class="col">
-      <label>出差人數 (1~10人)</label>
-      <input type="number" id="numPeople" value="1" min="1" max="10" onchange="updateCalculation()">
+  <!-- 調整：出差人數縮短，並與雜費按鈕底部對齊 -->
+  <div class="row" style="align-items: flex-end;">
+    <div style="flex: 0 0 130px;">
+      <label>出差人數 (1~10)</label>
+      <input type="number" id="numPeople" value="1" min="1" max="10" onchange="updateCalculation()" style="text-align: center;">
     </div>
-    <div class="col" style="display:flex; align-items:flex-end;">
+    <div style="flex: 1;">
       <label id="lblIncidental" class="checkbox-label checked">
         <input type="checkbox" id="calcIncidental" checked onchange="updateCalculation()"> 計算每人 400 元雜費
       </label>
@@ -231,7 +225,7 @@
   <button class="btn-submit" onclick="generatePDF()">📄 產生並下載出差報告單 PDF</button>
 </div>
 
-<!-- PDF 輸出模板 (生成時短暫顯示，確保正確抓圖) -->
+<!-- PDF 輸出模板 -->
 <div id="pdf-template">
   <div class="pdf-page" id="pdf-content">
     <div class="pdf-header">
@@ -521,8 +515,8 @@ function addExpenseRow(isFirst = false) {
     ${!isFirst ? `<button class="btn-delete" onclick="removeCard('exp_card_${id}')">✕ 刪除</button>` : ''}
     <div style="font-weight:bold; font-size:13px; margin-bottom:6px;">費用項目 #${id}</div>
     <div class="row">
-      <div class="col"><label>月份</label><input type="text" id="exp_m_${id}" value="${m}"></div>
-      <div class="col"><label>日期</label><input type="text" id="exp_d_${id}" value="${d}"></div>
+      <div class="col"><label>月份</label><input type="text" id="exp_m_${id}" value="${m}" style="text-align:center;"></div>
+      <div class="col"><label>日期</label><input type="text" id="exp_d_${id}" value="${d}" style="text-align:center;"></div>
       <div class="col" style="flex:2;"><label>行程</label><input type="text" id="exp_route_${id}"></div>
     </div>
     <div class="row">
@@ -560,8 +554,8 @@ function addReportRow(isFirst = false) {
     ${!isFirst ? `<button class="btn-delete" onclick="removeCard('rep_card_${id}')">✕ 刪除</button>` : ''}
     <div style="font-weight:bold; font-size:13px; margin-bottom:6px;">洽辦紀錄 #${id}</div>
     <div class="row">
-      <div class="col"><label>月份</label><input type="text" id="rep_m_${id}" value="${m}"></div>
-      <div class="col"><label>日期</label><input type="text" id="rep_d_${id}" value="${d}"></div>
+      <div class="col"><label>月份</label><input type="text" id="rep_m_${id}" value="${m}" style="text-align:center;"></div>
+      <div class="col"><label>日期</label><input type="text" id="rep_d_${id}" value="${d}" style="text-align:center;"></div>
     </div>
     <div class="row">
       <div class="col"><label>接洽人員 (可換行)</label><textarea id="rep_target_${id}" rows="2"></textarea></div>
@@ -705,23 +699,17 @@ function generatePDF() {
   const element = document.getElementById('pdf-content');
   const template = document.getElementById('pdf-template');
   
-  // 生成前短暫將模板顯示出來，並利用 windowWidth 解決手機截圖裁切問題
   template.style.display = 'block';
 
   const opt = {
     margin: [10, 10, 10, 10],
     filename: filename,
     image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { 
-      scale: 2, 
-      logging: false, 
-      windowWidth: 800 // 關鍵：欺騙手機引擎使其以為有 800px 寬，確保表格不被切斷
-    },
+    html2canvas: { scale: 2, logging: false, windowWidth: 800 },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
   html2pdf().set(opt).from(element).save().then(() => {
-    // 下載完畢後自動隱藏回原樣
     template.style.display = 'none';
   });
 }
