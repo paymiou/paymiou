@@ -39,14 +39,13 @@ PROJECT_CONFIG = {
 }
 
 # ----------------------------------------------------------------------
-# 自動下載與註冊中文字型 (徹底解決網頁版亂碼問題)
+# 自動下載與註冊中文字型
 # ----------------------------------------------------------------------
 @st.cache_resource
 def init_chinese_font():
     font_name = 'CustomChineseFont'
     font_filename = 'NotoSansTC-Regular.ttf'
     
-    # 1. 優先搜尋本機電腦 Windows 字型
     possible_paths = [
         r'C:\Windows\Fonts\msjh.ttc',
         r'C:\Windows\Fonts\kaiu.ttf',
@@ -62,10 +61,8 @@ def init_chinese_font():
             except Exception:
                 continue
 
-    # 2. 網頁版/手機版環境：自動從 CDN 下載微軟正黑體/思源黑體 TTF
     url = "https://cdn.jsdelivr.net/npm/@electron-fonts/noto-sans-tc@1.2.0/fonts/NotoSansTC-Regular.ttf"
     
-    # 使用 urllib 下載
     try:
         urllib.request.urlretrieve(url, font_filename)
         pdfmetrics.registerFont(TTFont(font_name, font_filename))
@@ -73,7 +70,6 @@ def init_chinese_font():
     except Exception:
         pass
 
-    # 使用 Pyodide HTTP 下載 (網頁端備援)
     try:
         import pyodide.http
         content = pyodide.http.open_url(url).read()
@@ -193,7 +189,7 @@ def generate_pdf_bytes(form_data, font_name):
         p("出差國家及城市", c_style_10), "", "", p(form_data.get('city', ''), c_left), "", ""
     ])
 
-    # Row 2: 時間
+    # Row 2: 出差時間
     y1, m1, d1 = form_data.get('y1', ''), form_data.get('m1', ''), form_data.get('d1', '')
     y2, m2, d2 = form_data.get('y2', ''), form_data.get('m2', ''), form_data.get('d2', '')
     days, receipts = form_data.get('days', ''), form_data.get('receipts', '')
@@ -402,41 +398,89 @@ def generate_pdf_bytes(form_data, font_name):
 # ----------------------------------------------------------------------
 st.set_page_config(page_title="出差旅費填報系統", page_icon="📝", layout="centered")
 
-# 初始化中文字型
 with st.spinner("系統字型初始化中，請稍候..."):
     current_font = init_chinese_font()
 
 st.title("📝 出差旅費報告單 - 填報系統")
 
+# 1. 報帳模式選擇
 st.subheader("📌 報帳模式")
 mode = st.radio("請選擇專案模式", ["茶博專案", "高美專案"], horizontal=True)
 config = PROJECT_CONFIG[mode]
 
+# 2. 基本資料
 st.subheader("👤 基本資料")
 col1, col2 = st.columns(2)
 with col1:
     name = st.text_input("姓名 (可留空供手寫簽名)", value="")
-    reason = st.selectbox("出差事由", ["茶農拜訪", "農友拜訪", "總部會議"], index=0 if mode=="茶博專案" else 1)
+    
+    reason_opts = ["茶農拜訪", "農友拜訪", "總部會議", "✍️ 其他 (手動自訂)"]
+    def_reason_idx = 0 if config["default_reason"] == "茶農拜訪" else 1
+    selected_reason = st.selectbox("出差事由 (參考選單)", reason_opts, index=def_reason_idx)
+    if selected_reason == "✍️ 其他 (手動自訂)":
+        reason = st.text_input("請輸入自訂出差事由", value="")
+    else:
+        reason = selected_reason
+
 with col2:
-    dept = st.selectbox("單位及職稱", [config["dept"]])
-    city = st.selectbox("出差國家城市", config["cities"])
+    dept_opts = [config["dept"], "中慈_台中推廣課632011", "中慈_綠保632013", "中慈_種樹632014", "✍️ 其他 (手動自訂)"]
+    selected_dept = st.selectbox("單位及職稱 (參考選單)", dept_opts, index=0)
+    if selected_dept == "✍️ 其他 (手動自訂)":
+        dept = st.text_input("請輸入自訂單位及職稱", value="")
+    else:
+        dept = selected_dept
 
-payment_method = st.selectbox("付款方式", ["個人", "匯款", "領現金"], index=0)
+    city_opts = config["cities"] + ["✍️ 其他 (手動自訂)"]
+    selected_city = st.selectbox("出差國家城市 (參考選單)", city_opts, index=0)
+    if selected_city == "✍️ 其他 (手動自訂)":
+        city = st.text_input("請輸入自訂出差國家城市", value="")
+    else:
+        city = selected_city
 
+pay_opts = ["個人", "匯款", "領現金", "✍️ 其他 (手動自訂)"]
+selected_pay = st.selectbox("付款方式 (參考選單)", pay_opts, index=0)
+if selected_pay == "✍️ 其他 (手動自訂)":
+    payment_method = st.text_input("請輸入自訂付款方式", value="")
+else:
+    payment_method = selected_pay
+
+# 3. 出差時間
 st.subheader("📅 出差時間與單據")
+
 today = datetime.date.today()
-start_date = st.date_input("出差起訖日期", value=today)
+if 'start_date' not in st.session_state:
+    st.session_state.start_date = today
+if 'end_date' not in st.session_state:
+    st.session_state.end_date = today
+
+def on_start_date_change():
+    st.session_state.end_date = st.session_state.start_date
+
+col_d1, col_d2 = st.columns(2)
+with col_d1:
+    start_date = st.date_input("出差起始日期 (起)", key="start_date", on_change=on_start_date_change)
+with col_d2:
+    end_date = st.date_input("出差截止日期 (迄)", key="end_date")
+
+calc_days = (end_date - start_date).days + 1
+if calc_days < 1:
+    calc_days = 1
 
 col_t1, col_t2 = st.columns(2)
 with col_t1:
-    days = st.text_input("共計天數", value="1")
+    days = st.text_input("共計天數", value=str(calc_days))
 with col_t2:
     receipts = st.text_input("附單據張數", value="1")
 
-roc_year = str(start_date.year - 1911)
-curr_m = str(start_date.month)
-curr_d = str(start_date.day)
+roc_y1 = str(start_date.year - 1911)
+m1 = str(start_date.month)
+d1 = str(start_date.day)
 
+roc_y2 = str(end_date.year - 1911)
+m2 = str(end_date.month)
+d2 = str(end_date.day)
+
+# 4. 費用明細紀錄
 st.subheader("💰 費用明細紀錄")
 col_p1, col_p2 = st.columns(2)
 with col_p1:
@@ -444,12 +488,18 @@ with col_p1:
 with col_p2:
     calc_incidental = st.checkbox("計算每人 400 元雜費", value=True)
 
-info = config["fares"][city]
-single_fare = info["fare"]
-total_transit = single_fare * num_people
+if city in config["fares"]:
+    info = config["fares"][city]
+    single_fare = info["fare"]
+    total_transit = single_fare * num_people
+    detail_str = f"台中到{info['name']}{info['type']} {single_fare}元(來回)x{num_people}人={total_transit}元"
+    standard_route = f"台中到{city}來回"
+else:
+    total_transit = 0
+    detail_str = f"出差至{city}"
+    standard_route = f"台中到{city}來回" if city else "台中來回"
+
 total_incidental = (400 * num_people) if calc_incidental else 0
-detail_str = f"台中到{info['name']}{info['type']} {single_fare}元(來回)x{num_people}人={total_transit}元"
-standard_route = f"台中到{city}來回"
 
 st.info(f"💡 **自動計算預覽**：\n- 大眾交通：**{total_transit} 元** ({standard_route})\n- 雜費金額：**{total_incidental} 元**\n- 洽辦說明：{detail_str}")
 
@@ -461,16 +511,23 @@ for i in range(st.session_state.exp_rows):
     with st.expander(f"費用項目 #{i+1}", expanded=(i==0)):
         e_col1, e_col2, e_col3 = st.columns(3)
         with e_col1:
-            e_m = st.text_input(f"月份 #{i+1}", value=curr_m, key=f"em_{i}")
-            e_d = st.text_input(f"日期 #{i+1}", value=curr_d, key=f"ed_{i}")
+            e_m = st.text_input(f"月份 #{i+1}", value=m1, key=f"em_{i}")
+            e_d = st.text_input(f"日期 #{i+1}", value=d1, key=f"ed_{i}")
         with e_col2:
             def_route = standard_route if i == 0 else ""
             e_route = st.text_input(f"行程 #{i+1}", value=def_route, key=f"er_{i}")
-            def_pub = str(total_transit) if i == 0 else ""
+            def_pub = str(total_transit) if (i == 0 and total_transit > 0) else ""
             e_pub = st.text_input(f"大眾交通金額 #{i+1}", value=def_pub, key=f"ep_{i}")
         with e_col3:
-            e_desc = st.selectbox(f"摘要 #{i+1}", ["雜費", ""], index=0 if i==0 else 1, key=f"edesc_{i}")
-            def_amt = str(total_incidental) if i == 0 else ""
+            e_desc_opts = ["雜費", "公務車", "過路費", "", "✍️ 其他 (手動自訂)"]
+            def_desc_idx = 0 if i == 0 else 3
+            e_desc_sel = st.selectbox(f"摘要 #{i+1}", e_desc_opts, index=def_desc_idx, key=f"edesc_sel_{i}")
+            if e_desc_sel == "✍️ 其他 (手動自訂)":
+                e_desc = st.text_input(f"請輸入自訂摘要 #{i+1}", value="", key=f"edesc_custom_{i}")
+            else:
+                e_desc = e_desc_sel
+
+            def_amt = str(total_incidental) if (i == 0 and total_incidental > 0) else ""
             e_amt = st.text_input(f"雜費金額 #{i+1}", value=def_amt, key=f"eamt_{i}")
 
         expenses_data.append({
@@ -488,6 +545,7 @@ with col_eb2:
         st.session_state.exp_rows -= 1
         st.rerun()
 
+# 5. 出差報告紀錄
 st.subheader("📋 出差報告紀錄")
 if 'rep_rows' not in st.session_state:
     st.session_state.rep_rows = 1
@@ -497,8 +555,8 @@ for i in range(st.session_state.rep_rows):
     with st.expander(f"洽辦紀錄 #{i+1}", expanded=(i==0)):
         r_col1, r_col2 = st.columns([1, 2])
         with r_col1:
-            r_m = st.text_input(f"報告月份 #{i+1}", value=curr_m, key=f"rm_{i}")
-            r_d = st.text_input(f"報告日期 #{i+1}", value=curr_d, key=f"rd_{i}")
+            r_m = st.text_input(f"報告月份 #{i+1}", value=m1, key=f"rm_{i}")
+            r_d = st.text_input(f"報告日期 #{i+1}", value=d1, key=f"rd_{i}")
         with r_col2:
             r_target = st.text_area(f"接洽人員 (可換行輸入多個單位)", height=3, key=f"rt_{i}")
             def_detail = detail_str if i == 0 else ""
@@ -520,17 +578,27 @@ with col_rb2:
 
 st.markdown("---")
 form_data = {
-    'name': name, 'dept': dept, 'reason': reason, 'city': city, 'payment_method': payment_method,
-    'y1': roc_year, 'm1': curr_m, 'd1': curr_d, 'y2': roc_year, 'm2': curr_m, 'd2': curr_d,
-    'days': days, 'receipts': receipts, 'expenses': expenses_data, 'reports': reports_data
+    'name': name,
+    'dept': dept,
+    'reason': reason,
+    'city': city,
+    'payment_method': payment_method,
+    'y1': roc_y1, 'm1': m1, 'd1': d1,
+    'y2': roc_y2, 'm2': m2, 'd2': d2,
+    'days': days, 'receipts': receipts,
+    'expenses': expenses_data,
+    'reports': reports_data
 }
 
 pdf_bytes = generate_pdf_bytes(form_data, current_font)
 
+# 檔名以出差起日為開頭 (範例：20260809_出差報告單.pdf)
+export_filename = f"{start_date.strftime('%Y%m%d')}_出差報告單.pdf"
+
 st.download_button(
     label="📄 產生並下載出差報告單 PDF",
     data=pdf_bytes,
-    file_name=f"出差報告單_{city}_{start_date.strftime('%Y%m%d')}.pdf",
+    file_name=export_filename,
     mime="application/pdf",
     use_container_width=True
 )
