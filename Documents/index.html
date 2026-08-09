@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>出差旅費報告單 - 填報系統</title>
-  <!-- 引入 html2pdf 庫 (轉換 A4 PDF) -->
+  <!-- 引入 html2pdf 庫 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", "Segoe UI", Roboto, sans-serif; }
@@ -18,7 +18,6 @@
     
     label { font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px; color: #495057; white-space: nowrap; }
     
-    /* 復原單選框與核取方塊的原生樣式 */
     input[type="checkbox"], input[type="radio"] { 
       -webkit-appearance: auto !important; 
       appearance: auto !important; 
@@ -43,60 +42,12 @@
     }
     input:focus, select:focus, textarea:focus { border-color: #1f4e78; outline: none; }
     
-    /* 報帳模式單選按鈕 */
-    .radio-group { 
-      display: flex; 
-      flex-direction: row; 
-      flex-wrap: nowrap; 
-      gap: 12px; 
-      align-items: center; 
-      padding: 6px 0; 
-      overflow-x: auto;
-    }
-    .radio-group label { 
-      display: inline-flex; 
-      align-items: center; 
-      gap: 8px; 
-      font-size: 15px; 
-      font-weight: bold; 
-      cursor: pointer; 
-      white-space: nowrap; 
-      padding: 8px 16px;
-      border: 2px solid #ced4da;
-      border-radius: 8px;
-      background-color: #f8f9fa;
-      transition: all 0.2s ease;
-      margin-bottom: 0;
-    }
-    .radio-group label.selected {
-      border-color: #1f4e78;
-      background-color: #e8f4f8;
-      color: #1f4e78;
-      box-shadow: 0 0 0 1px #1f4e78;
-    }
+    .radio-group { display: flex; flex-direction: row; flex-wrap: nowrap; gap: 12px; align-items: center; padding: 6px 0; overflow-x: auto; }
+    .radio-group label { display: inline-flex; align-items: center; gap: 8px; font-size: 15px; font-weight: bold; cursor: pointer; white-space: nowrap; padding: 8px 16px; border: 2px solid #ced4da; border-radius: 8px; background-color: #f8f9fa; transition: all 0.2s ease; margin-bottom: 0; }
+    .radio-group label.selected { border-color: #1f4e78; background-color: #e8f4f8; color: #1f4e78; box-shadow: 0 0 0 1px #1f4e78; }
 
-    /* 雜費勾選方塊視覺卡片 */
-    .checkbox-label {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      border: 2px solid #ced4da;
-      border-radius: 8px;
-      background-color: #f8f9fa;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: bold;
-      transition: all 0.2s ease;
-      width: 100%;
-      min-height: 38px;
-      margin-bottom: 0;
-    }
-    .checkbox-label.checked {
-      border-color: #1f4e78;
-      background-color: #e8f4f8;
-      color: #1f4e78;
-    }
+    .checkbox-label { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border: 2px solid #ced4da; border-radius: 8px; background-color: #f8f9fa; cursor: pointer; font-size: 13px; font-weight: bold; transition: all 0.2s ease; width: 100%; min-height: 38px; margin-bottom: 0; }
+    .checkbox-label.checked { border-color: #1f4e78; background-color: #e8f4f8; color: #1f4e78; }
 
     .info-box { background-color: #e8f4f8; border-left: 4px solid #1f4e78; padding: 10px; border-radius: 4px; font-size: 13px; margin: 10px 0; line-height: 1.5; }
     .card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 10px; margin-bottom: 10px; position: relative; }
@@ -104,35 +55,20 @@
     .btn-add { background: #6c757d; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 4px; }
     .btn-submit { display: block; width: 100%; background: #1f4e78; color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 8px rgba(31,78,120,0.3); text-align: center; text-decoration: none; }
     
-    /* 下載時的載入遮罩動畫 */
-    #pdf-loading {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(255, 255, 255, 0.95);
-      z-index: 99999;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-    }
-    .spinner {
-      width: 45px; height: 45px;
-      border: 5px solid #e0e0e0;
-      border-top: 5px solid #1f4e78;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
+    /* 載入遮罩，放在最頂層 */
+    #pdf-loading { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 99999; flex-direction: column; justify-content: center; align-items: center; }
+    .spinner { width: 45px; height: 45px; border: 5px solid #e0e0e0; border-top: 5px solid #1f4e78; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-    /* 螢幕外渲染 PDF 模板 (棄用 absolute left 以免截圖引擎 bug，改放最底下隱藏) */
+    /* PDF 模板 (渲染時放最左上角，且寬度固定 800px，被 Loading 遮蓋) */
     #pdf-template { 
       display: none; 
-      width: 800px;
-      background: #fff;
-      margin-top: 20px;
+      position: absolute; 
+      top: 0; 
+      left: 0; 
+      width: 800px; 
+      background: #fff; 
+      z-index: 99990; 
     }
     .pdf-page { width: 750px; padding: 20px; font-family: "Microsoft JhengHei", "標楷體", sans-serif; background: #fff; color: #000; margin: 0 auto; }
     .pdf-header { display: flex; justify-content: space-between; font-size: 9.5pt; line-height: 1.2; margin-bottom: 5px; }
@@ -150,114 +86,117 @@
 </head>
 <body>
 
+<!-- 全螢幕遮罩 (用來遮住 PDF 渲染過程) -->
 <div id="pdf-loading">
   <div class="spinner"></div>
   <div style="margin-top: 15px; font-size: 18px; font-weight: bold; color: #1f4e78;">📄 PDF 產生中，請稍候...</div>
 </div>
 
-<div class="container">
-  <h2>📝 出差旅費報告單 - 填報系統</h2>
+<div id="main-ui">
+  <div class="container">
+    <h2>📝 出差旅費報告單 - 填報系統</h2>
 
-  <div class="section-title">📌 報帳模式</div>
-  <div class="radio-group">
-    <label id="lbl-mode-chabo" class="selected">
-      <input type="radio" name="projectMode" value="茶博專案" checked onchange="onModeChange()"> 茶博專案
-    </label>
-    <label id="lbl-mode-gaomei">
-      <input type="radio" name="projectMode" value="高美專案" onchange="onModeChange()"> 高美專案
-    </label>
-  </div>
-
-  <div class="section-title">👤 基本資料</div>
-  <div class="row">
-    <div class="col">
-      <label>姓名 (可留空供簽名)</label>
-      <input type="text" id="empName" placeholder="請輸入姓名">
-    </div>
-    <div class="col">
-      <label>單位及職稱</label>
-      <select id="deptSelect" onchange="checkCustomInput('deptSelect', 'deptCustom')"></select>
-      <input type="text" id="deptCustom" style="display:none; margin-top:4px;" placeholder="請輸入自訂單位">
-    </div>
-  </div>
-  <div class="row">
-    <div class="col">
-      <label>出差事由</label>
-      <select id="reasonSelect" onchange="checkCustomInput('reasonSelect', 'reasonCustom')">
-        <option value="茶農拜訪">茶農拜訪</option>
-        <option value="農友拜訪">農友拜訪</option>
-        <option value="總部會議">總部會議</option>
-        <option value="custom">✍️ 其他 (手動自訂)</option>
-      </select>
-      <input type="text" id="reasonCustom" style="display:none; margin-top:4px;" placeholder="請輸入自訂事由">
-    </div>
-    <div class="col">
-      <label>出差國家城市</label>
-      <select id="citySelect" onchange="onCityChange()"></select>
-      <input type="text" id="cityCustom" style="display:none; margin-top:4px;" placeholder="請輸入自訂城市" oninput="updateCalculation()">
-    </div>
-  </div>
-  <div class="row">
-    <div class="col">
-      <label>付款方式</label>
-      <select id="paySelect" onchange="checkCustomInput('paySelect', 'payCustom')">
-        <option value="個人">個人</option>
-        <option value="匯款">匯款</option>
-        <option value="領現金">領現金</option>
-        <option value="custom">✍️ 其他 (手動自訂)</option>
-      </select>
-      <input type="text" id="payCustom" style="display:none; margin-top:4px;" placeholder="請輸入自訂付款方式">
-    </div>
-  </div>
-
-  <div class="section-title">📅 出差時間與單據</div>
-  <div class="row">
-    <div class="col">
-      <label>出差起始日期 (起)</label>
-      <input type="date" id="startDate" onchange="onStartDateChange()">
-    </div>
-    <div class="col">
-      <label>出差截止日期 (迄)</label>
-      <input type="date" id="endDate" onchange="updateDays()">
-    </div>
-  </div>
-  <div class="row">
-    <div class="col">
-      <label>共計天數</label>
-      <input type="text" id="totalDays" value="1" style="text-align: center;">
-    </div>
-    <div class="col">
-      <label>附單據張數</label>
-      <input type="text" id="totalReceipts" value="1" style="text-align: center;">
-    </div>
-  </div>
-
-  <div class="section-title">💰 費用明細紀錄</div>
-  <div class="row" style="align-items: flex-end;">
-    <div style="flex: 0 0 130px;">
-      <label>出差人數 (1~10)</label>
-      <input type="number" id="numPeople" value="1" min="1" max="10" onchange="updateCalculation()" style="text-align: center;">
-    </div>
-    <div style="flex: 1;">
-      <label id="lblIncidental" class="checkbox-label checked">
-        <input type="checkbox" id="calcIncidental" checked onchange="updateCalculation()"> 計算每人 400 元雜費
+    <div class="section-title">📌 報帳模式</div>
+    <div class="radio-group">
+      <label id="lbl-mode-chabo" class="selected">
+        <input type="radio" name="projectMode" value="茶博專案" checked onchange="onModeChange()"> 茶博專案
+      </label>
+      <label id="lbl-mode-gaomei">
+        <input type="radio" name="projectMode" value="高美專案" onchange="onModeChange()"> 高美專案
       </label>
     </div>
+
+    <div class="section-title">👤 基本資料</div>
+    <div class="row">
+      <div class="col">
+        <label>姓名 (可留空供簽名)</label>
+        <input type="text" id="empName" placeholder="請輸入姓名">
+      </div>
+      <div class="col">
+        <label>單位及職稱</label>
+        <select id="deptSelect" onchange="checkCustomInput('deptSelect', 'deptCustom')"></select>
+        <input type="text" id="deptCustom" style="display:none; margin-top:4px;" placeholder="請輸入自訂單位">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <label>出差事由</label>
+        <select id="reasonSelect" onchange="checkCustomInput('reasonSelect', 'reasonCustom')">
+          <option value="茶農拜訪">茶農拜訪</option>
+          <option value="農友拜訪">農友拜訪</option>
+          <option value="總部會議">總部會議</option>
+          <option value="custom">✍️ 其他 (手動自訂)</option>
+        </select>
+        <input type="text" id="reasonCustom" style="display:none; margin-top:4px;" placeholder="請輸入自訂事由">
+      </div>
+      <div class="col">
+        <label>出差國家城市</label>
+        <select id="citySelect" onchange="onCityChange()"></select>
+        <input type="text" id="cityCustom" style="display:none; margin-top:4px;" placeholder="請輸入自訂城市" oninput="updateCalculation()">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <label>付款方式</label>
+        <select id="paySelect" onchange="checkCustomInput('paySelect', 'payCustom')">
+          <option value="個人">個人</option>
+          <option value="匯款">匯款</option>
+          <option value="領現金">領現金</option>
+          <option value="custom">✍️ 其他 (手動自訂)</option>
+        </select>
+        <input type="text" id="payCustom" style="display:none; margin-top:4px;" placeholder="請輸入自訂付款方式">
+      </div>
+    </div>
+
+    <div class="section-title">📅 出差時間與單據</div>
+    <div class="row">
+      <div class="col">
+        <label>出差起始日期 (起)</label>
+        <input type="date" id="startDate" onchange="onStartDateChange()">
+      </div>
+      <div class="col">
+        <label>出差截止日期 (迄)</label>
+        <input type="date" id="endDate" onchange="updateDays()">
+      </div>
+    </div>
+    <div class="row">
+      <div class="col">
+        <label>共計天數</label>
+        <input type="text" id="totalDays" value="1" style="text-align: center;">
+      </div>
+      <div class="col">
+        <label>附單據張數</label>
+        <input type="text" id="totalReceipts" value="1" style="text-align: center;">
+      </div>
+    </div>
+
+    <div class="section-title">💰 費用明細紀錄</div>
+    <div class="row" style="align-items: flex-end;">
+      <div style="flex: 0 0 130px;">
+        <label>出差人數 (1~10)</label>
+        <input type="number" id="numPeople" value="1" min="1" max="10" onchange="updateCalculation()" style="text-align: center;">
+      </div>
+      <div style="flex: 1;">
+        <label id="lblIncidental" class="checkbox-label checked">
+          <input type="checkbox" id="calcIncidental" checked onchange="updateCalculation()"> 計算每人 400 元雜費
+        </label>
+      </div>
+    </div>
+
+    <div class="info-box" id="previewBox">預覽載入中...</div>
+
+    <div id="expensesContainer"></div>
+    <button class="btn-add" onclick="addExpenseRow()">➕ 新增一筆費用</button>
+
+    <div class="section-title">📋 出差報告紀錄</div>
+    <div id="reportsContainer"></div>
+    <button class="btn-add" onclick="addReportRow()">➕ 新增一筆報告</button>
+
+    <button class="btn-submit" onclick="generatePDF()">📄 產生並下載出差報告單 PDF</button>
   </div>
-
-  <div class="info-box" id="previewBox">預覽載入中...</div>
-
-  <div id="expensesContainer"></div>
-  <button class="btn-add" onclick="addExpenseRow()">➕ 新增一筆費用</button>
-
-  <div class="section-title">📋 出差報告紀錄</div>
-  <div id="reportsContainer"></div>
-  <button class="btn-add" onclick="addReportRow()">➕ 新增一筆報告</button>
-
-  <button class="btn-submit" onclick="generatePDF()">📄 產生並下載出差報告單 PDF</button>
 </div>
 
-<!-- PDF 輸出模板 (包含在底下，生成時短暫顯示) -->
+<!-- PDF 輸出模板 (渲染時固定 800px，保證不被裁切) -->
 <div id="pdf-template">
   <div class="pdf-page" id="pdf-content">
     <div class="pdf-header">
@@ -386,10 +325,22 @@ const PROJECT_CONFIG = {
 let expenseCount = 0;
 let reportCount = 0;
 
+function getParsedDate(dateString) {
+  if(!dateString) return { y: "", m: "", d: "" };
+  const parts = dateString.split('-');
+  if(parts.length === 3) {
+    return { y: parts[0], m: parseInt(parts[1], 10).toString(), d: parseInt(parts[2], 10).toString() };
+  }
+  return { y: "", m: "", d: "" };
+}
+
 window.onload = function() {
-  const todayStr = new Date().toISOString().split('T')[0];
-  document.getElementById('startDate').value = todayStr;
-  document.getElementById('endDate').value = todayStr;
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  const localISOTime = (new Date(now - offset)).toISOString().slice(0, 10);
+  
+  document.getElementById('startDate').value = localISOTime;
+  document.getElementById('endDate').value = localISOTime;
   onModeChange();
   addExpenseRow(true);
   addReportRow(true);
@@ -424,48 +375,44 @@ function onStartDateChange() {
 }
 
 function syncAllRowDates() {
-  const sVal = document.getElementById('startDate').value;
-  if (!sVal) return;
-  const sDate = new Date(sVal);
-  const m = (sDate.getMonth() + 1).toString();
-  const d = sDate.getDate().toString();
+  const sDate = getParsedDate(document.getElementById('startDate').value);
+  if(!sDate.m) return;
 
-  const expCards = document.querySelectorAll('#expensesContainer .card');
-  expCards.forEach(card => {
+  document.querySelectorAll('#expensesContainer .card').forEach(card => {
     const id = card.id.replace('exp_card_', '');
     const mEl = document.getElementById(`exp_m_${id}`);
     const dEl = document.getElementById(`exp_d_${id}`);
-    if (mEl) mEl.value = m;
-    if (dEl) dEl.value = d;
+    if (mEl) mEl.value = sDate.m;
+    if (dEl) dEl.value = sDate.d;
   });
 
-  const repCards = document.querySelectorAll('#reportsContainer .card');
-  repCards.forEach(card => {
+  document.querySelectorAll('#reportsContainer .card').forEach(card => {
     const id = card.id.replace('rep_card_', '');
     const mEl = document.getElementById(`rep_m_${id}`);
     const dEl = document.getElementById(`rep_d_${id}`);
-    if (mEl) mEl.value = m;
-    if (dEl) dEl.value = d;
+    if (mEl) mEl.value = sDate.m;
+    if (dEl) dEl.value = sDate.d;
   });
 }
 
 function updateDays() {
-  const s = new Date(document.getElementById('startDate').value);
-  const e = new Date(document.getElementById('endDate').value);
-  const diffTime = Math.abs(e - s);
+  const sVal = document.getElementById('startDate').value;
+  const eVal = document.getElementById('endDate').value;
+  if(!sVal || !eVal) return;
+  
+  const s = new Date(sVal.replace(/-/g, '/'));
+  const e = new Date(eVal.replace(/-/g, '/'));
+  
+  const diffTime = e - s;
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-  document.getElementById('totalDays').value = isNaN(diffDays) ? 1 : diffDays;
+  document.getElementById('totalDays').value = (isNaN(diffDays) || diffDays < 1) ? 1 : diffDays;
   updateCalculation();
 }
 
 function checkCustomInput(selectId, customInputId) {
   const sel = document.getElementById(selectId);
   const inp = document.getElementById(customInputId);
-  if (sel.value === 'custom') {
-    inp.style.display = 'block';
-  } else {
-    inp.style.display = 'none';
-  }
+  inp.style.display = (sel.value === 'custom') ? 'block' : 'none';
   updateCalculation();
 }
 
@@ -476,10 +423,7 @@ function onCityChange() {
 
 function getSelectedVal(selectId, customInputId) {
   const sel = document.getElementById(selectId);
-  if (sel.value === 'custom') {
-    return document.getElementById(customInputId).value;
-  }
-  return sel.value;
+  return sel.value === 'custom' ? document.getElementById(customInputId).value : sel.value;
 }
 
 function updateCalculation() {
@@ -490,17 +434,9 @@ function updateCalculation() {
   
   const cb = document.getElementById('calcIncidental');
   const cbLbl = document.getElementById('lblIncidental');
-  const calcIncidental = cb.checked;
+  cbLbl.className = cb.checked ? 'checkbox-label checked' : 'checkbox-label';
 
-  if (calcIncidental) {
-    cbLbl.className = 'checkbox-label checked';
-  } else {
-    cbLbl.className = 'checkbox-label';
-  }
-
-  let totalTransit = 0;
-  let detailStr = "";
-  let standardRoute = "";
+  let totalTransit = 0, detailStr = "", standardRoute = "";
 
   if (config.fares[city]) {
     const info = config.fares[city];
@@ -508,24 +444,20 @@ function updateCalculation() {
     detailStr = `台中到${info.name}${info.type} ${info.fare}元(來回)x${numPeople}人=${totalTransit}元`;
     standardRoute = `台中到${city}來回`;
   } else {
-    totalTransit = 0;
     detailStr = `出差至${city}`;
     standardRoute = city ? `台中到${city}來回` : "台中來回";
   }
 
-  const totalIncidental = calcIncidental ? (400 * numPeople) : 0;
+  const totalIncidental = cb.checked ? (400 * numPeople) : 0;
 
   document.getElementById('previewBox').innerHTML = `💡 <b>自動計算預覽</b>：<br/>- 大眾交通：<b>${totalTransit} 元</b> (${standardRoute})<br/>- 雜費金額：<b>${totalIncidental} 元</b><br/>- 洽辦說明：${detailStr}`;
 
   const firstExpRoute = document.getElementById('exp_route_1');
   if (firstExpRoute) firstExpRoute.value = standardRoute;
-
   const firstExpPub = document.getElementById('exp_pub_1');
   if (firstExpPub) firstExpPub.value = totalTransit || "";
-
   const firstExpAmt = document.getElementById('exp_amt_1');
   if (firstExpAmt) firstExpAmt.value = totalIncidental || "";
-
   const firstRepDetail = document.getElementById('rep_detail_1');
   if (firstRepDetail) firstRepDetail.value = detailStr;
 }
@@ -534,10 +466,7 @@ function addExpenseRow(isFirst = false) {
   if (expenseCount >= 6) return alert('費用項目最多新增 6 筆');
   expenseCount++;
   const id = expenseCount;
-
-  const sDate = new Date(document.getElementById('startDate').value);
-  const m = (sDate.getMonth() + 1).toString();
-  const d = sDate.getDate().toString();
+  const sDate = getParsedDate(document.getElementById('startDate').value);
 
   const container = document.getElementById('expensesContainer');
   const card = document.createElement('div');
@@ -547,8 +476,8 @@ function addExpenseRow(isFirst = false) {
     ${!isFirst ? `<button class="btn-delete" onclick="removeCard('exp_card_${id}')">✕ 刪除</button>` : ''}
     <div style="font-weight:bold; font-size:13px; margin-bottom:6px;">費用項目 #${id}</div>
     <div class="row">
-      <div class="col"><label>月份</label><input type="text" id="exp_m_${id}" value="${m}" style="text-align:center;"></div>
-      <div class="col"><label>日期</label><input type="text" id="exp_d_${id}" value="${d}" style="text-align:center;"></div>
+      <div class="col"><label>月份</label><input type="text" id="exp_m_${id}" value="${sDate.m}" style="text-align:center;"></div>
+      <div class="col"><label>日期</label><input type="text" id="exp_d_${id}" value="${sDate.d}" style="text-align:center;"></div>
       <div class="col" style="flex:2;"><label>行程</label><input type="text" id="exp_route_${id}"></div>
     </div>
     <div class="row">
@@ -573,10 +502,7 @@ function addReportRow(isFirst = false) {
   if (reportCount >= 3) return alert('報告紀錄最多新增 3 筆');
   reportCount++;
   const id = reportCount;
-
-  const sDate = new Date(document.getElementById('startDate').value);
-  const m = (sDate.getMonth() + 1).toString();
-  const d = sDate.getDate().toString();
+  const sDate = getParsedDate(document.getElementById('startDate').value);
 
   const container = document.getElementById('reportsContainer');
   const card = document.createElement('div');
@@ -586,8 +512,8 @@ function addReportRow(isFirst = false) {
     ${!isFirst ? `<button class="btn-delete" onclick="removeCard('rep_card_${id}')">✕ 刪除</button>` : ''}
     <div style="font-weight:bold; font-size:13px; margin-bottom:6px;">洽辦紀錄 #${id}</div>
     <div class="row">
-      <div class="col"><label>月份</label><input type="text" id="rep_m_${id}" value="${m}" style="text-align:center;"></div>
-      <div class="col"><label>日期</label><input type="text" id="rep_d_${id}" value="${d}" style="text-align:center;"></div>
+      <div class="col"><label>月份</label><input type="text" id="rep_m_${id}" value="${sDate.m}" style="text-align:center;"></div>
+      <div class="col"><label>日期</label><input type="text" id="rep_d_${id}" value="${sDate.d}" style="text-align:center;"></div>
     </div>
     <div class="row">
       <div class="col"><label>接洽人員 (可換行)</label><textarea id="rep_target_${id}" rows="2"></textarea></div>
@@ -610,19 +536,12 @@ function numberToChineseCapital(num) {
   const digits = ["零", "壹", "貳", "參", "肆", "伍", "陸", "柒", "捌", "玖"];
   const units = ["", "拾", "佰", "仟"];
   const bigUnits = ["", "萬", "億"];
-  let str = num.toString();
-  let len = str.length;
-  let res = "";
+  let str = num.toString(), len = str.length, res = "";
   for (let i = 0; i < len; i++) {
-    let n = parseInt(str[i]);
-    let pos = len - 1 - i;
-    let u = pos % 4;
-    let bu = Math.floor(pos / 4);
-    if (n !== 0) {
-      res += digits[n] + units[u];
-    } else {
-      if (!res.endsWith("零") && u !== 0) res += "零";
-    }
+    let n = parseInt(str[i]), pos = len - 1 - i;
+    let u = pos % 4, bu = Math.floor(pos / 4);
+    if (n !== 0) res += digits[n] + units[u];
+    else if (!res.endsWith("零") && u !== 0) res += "零";
     if (u === 0 && bu > 0) {
       if (res.endsWith("零")) res = res.slice(0, -1);
       res += bigUnits[bu];
@@ -632,32 +551,30 @@ function numberToChineseCapital(num) {
 }
 
 function generatePDF() {
+  // 1. 【防裁切神招】強制捲動到頁面最頂端，避免截圖時偏移
+  window.scrollTo(0, 0);
+
+  // 2. 顯示遮罩與排版
   const loadingOverlay = document.getElementById('pdf-loading');
   const template = document.getElementById('pdf-template');
-  
-  // 1. 打開載入動畫遮罩與 PDF 模板 (放置於底層)
   loadingOverlay.style.display = 'flex';
   template.style.display = 'block';
 
-  // 2. 將資料綁定到 PDF 模板
-  const sDate = new Date(document.getElementById('startDate').value);
-  const rocY1 = (sDate.getFullYear() - 1911).toString();
+  // 3. 填入報表資料
+  const sDate = getParsedDate(document.getElementById('startDate').value);
+  const eDate = getParsedDate(document.getElementById('endDate').value);
+  const rocY1 = sDate.y ? (parseInt(sDate.y, 10) - 1911).toString() : "";
+  const rocY2 = eDate.y ? (parseInt(eDate.y, 10) - 1911).toString() : "";
 
   document.getElementById('p-name').innerText = document.getElementById('empName').value;
   document.getElementById('p-dept').innerText = getSelectedVal('deptSelect', 'deptCustom');
   document.getElementById('p-reason').innerText = getSelectedVal('reasonSelect', 'reasonCustom');
   document.getElementById('p-city').innerText = getSelectedVal('citySelect', 'cityCustom');
 
-  const m1 = (sDate.getMonth() + 1).toString();
-  const d1 = sDate.getDate().toString();
-  const eDate = new Date(document.getElementById('endDate').value);
-  const rocY2 = (eDate.getFullYear() - 1911).toString();
-  const m2 = (eDate.getMonth() + 1).toString();
-  const d2 = eDate.getDate().toString();
   const days = document.getElementById('totalDays').value;
   const receipts = document.getElementById('totalReceipts').value;
 
-  document.getElementById('p-time').innerText = `民國 ${rocY1} 年 ${m1} 月 ${d1} 日起至民國 ${rocY2} 年 ${m2} 月 ${d2} 日止共計 ${days} 天/附單據 ${receipts} 張/匯率：`;
+  document.getElementById('p-time').innerText = `民國 ${rocY1} 年 ${sDate.m} 月 ${sDate.d} 日起至民國 ${rocY2} 年 ${eDate.m} 月 ${eDate.d} 日止共計 ${days} 天/附單據 ${receipts} 張/匯率：`;
   document.getElementById('p-year').innerText = `${rocY1} 年`;
   document.getElementById('p-year-rep').innerText = `${rocY1} 年`;
 
@@ -665,8 +582,7 @@ function generatePDF() {
   expTbody.innerHTML = "";
   let totalAmt = 0;
 
-  const expCards = document.querySelectorAll('#expensesContainer .card');
-  expCards.forEach(card => {
+  document.querySelectorAll('#expensesContainer .card').forEach(card => {
     const id = card.id.replace('exp_card_', '');
     const m = document.getElementById(`exp_m_${id}`)?.value || "";
     const d = document.getElementById(`exp_d_${id}`)?.value || "";
@@ -680,12 +596,7 @@ function generatePDF() {
 
     const tr = document.createElement('tr');
     tr.style.height = "35px";
-    tr.innerHTML = `
-      <td>${m}</td><td>${d}</td><td class="text-left font-10">${route}</td>
-      <td>${pub || ''}</td><td></td><td></td><td></td><td></td>
-      <td>${desc}</td><td>${amt || ''}</td><td class="font-10"></td>
-      <td>${rowTotal || ''}</td>
-    `;
+    tr.innerHTML = `<td>${m}</td><td>${d}</td><td class="text-left font-10">${route}</td><td>${pub || ''}</td><td></td><td></td><td></td><td></td><td>${desc}</td><td>${amt || ''}</td><td class="font-10"></td><td>${rowTotal || ''}</td>`;
     expTbody.appendChild(tr);
   });
 
@@ -699,8 +610,7 @@ function generatePDF() {
   const repTbody = document.getElementById('pdf-reports-rows');
   repTbody.innerHTML = "";
 
-  const repCards = document.querySelectorAll('#reportsContainer .card');
-  repCards.forEach(card => {
+  document.querySelectorAll('#reportsContainer .card').forEach(card => {
     const id = card.id.replace('rep_card_', '');
     const m = document.getElementById(`rep_m_${id}`)?.value || "";
     const d = document.getElementById(`rep_d_${id}`)?.value || "";
@@ -709,11 +619,7 @@ function generatePDF() {
 
     const tr = document.createElement('tr');
     tr.style.height = "48px";
-    tr.innerHTML = `
-      <td>${m}</td><td>${d}</td>
-      <td colspan="4" class="font-95">${target}</td>
-      <td colspan="6" class="text-left">${detail}</td>
-    `;
+    tr.innerHTML = `<td>${m}</td><td>${d}</td><td colspan="4" class="font-95">${target}</td><td colspan="6" class="text-left">${detail}</td>`;
     repTbody.appendChild(tr);
   });
 
@@ -731,33 +637,35 @@ function generatePDF() {
   const capital = numberToChineseCapital(totalAmt);
   document.getElementById('p-capital-text').innerHTML = `茲領到上列旅費計新台幣 <span style="font-size:16pt; font-weight:bold;">${capital}</span> 元整`;
 
-  const dateNum = sDate.getFullYear().toString() +
-    (sDate.getMonth() + 1).toString().padStart(2, '0') +
-    sDate.getDate().toString().padStart(2, '0');
-  const filename = `${dateNum}_出差報告單.pdf`;
+  const filenameDate = sDate.y ? `${sDate.y}${sDate.m.padStart(2,'0')}${sDate.d.padStart(2,'0')}` : "出差";
+  const filename = `${filenameDate}_出差報告單.pdf`;
 
   const element = document.getElementById('pdf-content');
 
-  // 3. 【最關鍵步驟】強制延遲 500 毫秒，讓手機瀏覽器有足夠時間畫出排版
+  // 4. 強制延遲 800ms，保證瀏覽器有充分時間畫完模板且置頂
   setTimeout(() => {
     const opt = {
       margin: [10, 10, 10, 10],
       filename: filename,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, logging: false, windowWidth: 800 },
+      image: { type: 'jpeg', quality: 1 },
+      html2canvas: { 
+        scale: 2, 
+        logging: false, 
+        windowWidth: 800 // 強制以 800px 電腦版寬度截圖，解決手機裁切
+      },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     html2pdf().set(opt).from(element).save().then(() => {
-      // 下載完成後，關閉遮罩並隱藏模板
+      // 5. 下載成功後還原狀態
       template.style.display = 'none';
       loadingOverlay.style.display = 'none';
     }).catch(err => {
       template.style.display = 'none';
       loadingOverlay.style.display = 'none';
-      alert('產生失敗，請稍後再試。');
+      alert('產生失敗，請再試一次。');
     });
-  }, 500);
+  }, 800);
 }
 </script>
 </body>
