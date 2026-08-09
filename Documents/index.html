@@ -13,7 +13,7 @@
     h2 { text-align: center; color: #1f4e78; margin-top: 0; font-size: 22px; }
     .section-title { font-size: 16px; font-weight: bold; color: #1f4e78; border-bottom: 2px solid #1f4e78; padding-bottom: 4px; margin-top: 18px; margin-bottom: 12px; }
     
-    .row { display: flex; flex-wrap: nowrap; gap: 10px; margin-bottom: 10px; }
+    .row { display: flex; flex-wrap: nowrap; gap: 8px; margin-bottom: 10px; align-items: flex-end; }
     .col { flex: 1 1 0px; min-width: 0; }
     
     label { font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px; color: #495057; white-space: nowrap; }
@@ -30,7 +30,7 @@
 
     input[type="text"], input[type="number"], input[type="date"], select, textarea { 
       width: 100%; 
-      padding: 8px 10px; 
+      padding: 8px 6px; 
       font-size: 14px; 
       border: 1px solid #ced4da; 
       border-radius: 6px; 
@@ -55,6 +55,11 @@
     .btn-add { background: #6c757d; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 4px; }
     .btn-submit { display: block; width: 100%; background: #1f4e78; color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 8px rgba(31,78,120,0.3); text-align: center; text-decoration: none; }
     
+    /* 響應式微調：手機裝置允許分行 */
+    @media (max-width: 640px) {
+      .row { flex-wrap: wrap; }
+    }
+
     /* 載入遮罩，放在最頂層 */
     #pdf-loading { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #ffffff; z-index: 99999; flex-direction: column; justify-content: center; align-items: center; }
     .spinner { width: 45px; height: 45px; border: 5px solid #e0e0e0; border-top: 5px solid #1f4e78; border-radius: 50%; animation: spin 1s linear infinite; }
@@ -66,11 +71,11 @@
       position: fixed; 
       top: 0; 
       left: 0; 
-      width: 100vw; 
+      width: 680px; 
       height: 100vh; 
       background: #fff; 
       z-index: 99990; 
-      overflow: auto;
+      overflow: hidden;
     }
     .pdf-page { 
       width: 680px; 
@@ -79,7 +84,7 @@
       font-family: "Microsoft JhengHei", "標楷體", sans-serif; 
       background: #fff; 
       color: #000; 
-      margin: 0 auto; 
+      margin: 0; 
     }
     .pdf-header { display: flex; justify-content: space-between; font-size: 8.5pt; line-height: 1.2; margin-bottom: 5px; }
     .pdf-title { text-align: center; font-size: 15pt; font-weight: bold; margin: 4px 0 2px 0; }
@@ -160,21 +165,19 @@
 
     <div class="section-title">📅 出差時間與單據</div>
     <div class="row">
-      <div class="col">
+      <div class="col" style="flex: 2;">
         <label>出差起始日期 (起)</label>
         <input type="date" id="startDate" onchange="onStartDateChange()">
       </div>
-      <div class="col">
+      <div class="col" style="flex: 2;">
         <label>出差截止日期 (迄)</label>
         <input type="date" id="endDate" onchange="updateDays()">
       </div>
-    </div>
-    <div class="row">
-      <div class="col">
+      <div style="flex: 0 0 85px;">
         <label>共計天數</label>
         <input type="text" id="totalDays" value="1" style="text-align: center;">
       </div>
-      <div class="col">
+      <div style="flex: 0 0 95px;">
         <label>附單據張數</label>
         <input type="text" id="totalReceipts" value="1" style="text-align: center;">
       </div>
@@ -246,8 +249,8 @@
         <td colspan="11" class="text-left font-10" id="p-time"></td>
       </tr>
       <tr style="height:24px;">
-        <td id="p-year" style="width:36px;"></td>
-        <td colspan="2">行 程</td>
+        <td id="p-year" colspan="2" style="width:50px;"></td>
+        <td colspan="1" style="width:140px;">行 程</td>
         <td colspan="3">交 通 費</td>
         <td style="width:40px;">膳 費</td>
         <td style="width:40px;">宿 費</td>
@@ -258,7 +261,7 @@
       <tr style="height:24px;">
         <td style="width:25px;">月</td>
         <td style="width:25px;">日</td>
-        <td style="width:140px;"></td>
+        <td></td>
         <td class="font-10" style="width:50px;">大眾交通工具</td>
         <td class="font-10" style="width:35px;">飛機</td>
         <td class="font-10" style="width:40px;">計程車</td>
@@ -278,8 +281,8 @@
         <td colspan="12" style="font-weight:bold;">出 差 報 告</td>
       </tr>
       <tr style="height:24px;">
-        <td id="p-year-rep"></td>
-        <td colspan="5">訪洽公司/機構名稱及接洽人員姓名</td>
+        <td id="p-year-rep" colspan="2"></td>
+        <td colspan="4">訪洽公司/機構名稱及接洽人員姓名</td>
         <td colspan="6">洽 辦 事 項 說 明</td>
       </tr>
       <tr style="height:24px;">
@@ -497,13 +500,11 @@ function addExpenseRow(isFirst = false) {
     ${!isFirst ? `<button class="btn-delete" onclick="removeCard('exp_card_${id}')">✕ 刪除</button>` : ''}
     <div style="font-weight:bold; font-size:13px; margin-bottom:6px;">費用項目 #${id}</div>
     <div class="row">
-      <div style="flex: 0 0 55px;"><label>月份</label><input type="text" id="exp_m_${id}" value="${sDate.m}" style="text-align:center; padding:8px 2px;"></div>
-      <div style="flex: 0 0 55px;"><label>日期</label><input type="text" id="exp_d_${id}" value="${sDate.d}" style="text-align:center; padding:8px 2px;"></div>
+      <div style="flex: 0 0 48px;"><label>月份</label><input type="text" id="exp_m_${id}" value="${sDate.m}" style="text-align:center; padding:8px 2px;"></div>
+      <div style="flex: 0 0 48px;"><label>日期</label><input type="text" id="exp_d_${id}" value="${sDate.d}" style="text-align:center; padding:8px 2px;"></div>
       <div style="flex: 1; min-width: 0;"><label>行程</label><input type="text" id="exp_route_${id}"></div>
-      <div style="flex: 0 0 120px;"><label>大眾交通金額</label><input type="number" id="exp_pub_${id}" oninput="updateCalculation()"></div>
-    </div>
-    <div class="row" style="justify-content: flex-start;">
-      <div style="flex: 0 0 120px;"><label>摘要</label>
+      <div style="flex: 0 0 110px;"><label>大眾交通金額</label><input type="number" id="exp_pub_${id}" oninput="updateCalculation()"></div>
+      <div style="flex: 0 0 90px;"><label>摘要</label>
         <select id="exp_desc_${id}">
           <option value="雜費" ${isFirst ? 'selected' : ''}>雜費</option>
           <option value="公務車">公務車</option>
@@ -511,7 +512,7 @@ function addExpenseRow(isFirst = false) {
           <option value="" ${!isFirst ? 'selected' : ''}>空白</option>
         </select>
       </div>
-      <div style="flex: 0 0 120px;"><label>金額</label><input type="number" id="exp_amt_${id}" oninput="updateCalculation()"></div>
+      <div style="flex: 0 0 90px;"><label>金額</label><input type="number" id="exp_amt_${id}" oninput="updateCalculation()"></div>
     </div>
   `;
   container.appendChild(card);
@@ -532,8 +533,8 @@ function addReportRow(isFirst = false) {
     ${!isFirst ? `<button class="btn-delete" onclick="removeCard('rep_card_${id}')">✕ 刪除</button>` : ''}
     <div style="font-weight:bold; font-size:13px; margin-bottom:6px;">洽辦紀錄 #${id}</div>
     <div class="row">
-      <div style="flex: 0 0 55px;"><label>月份</label><input type="text" id="rep_m_${id}" value="${sDate.m}" style="text-align:center; padding:8px 2px;"></div>
-      <div style="flex: 0 0 55px;"><label>日期</label><input type="text" id="rep_d_${id}" value="${sDate.d}" style="text-align:center; padding:8px 2px;"></div>
+      <div style="flex: 0 0 48px;"><label>月份</label><input type="text" id="rep_m_${id}" value="${sDate.m}" style="text-align:center; padding:8px 2px;"></div>
+      <div style="flex: 0 0 48px;"><label>日期</label><input type="text" id="rep_d_${id}" value="${sDate.d}" style="text-align:center; padding:8px 2px;"></div>
       <div style="flex: 1; min-width: 0;"><label>洽辦事項說明</label><input type="text" id="rep_detail_${id}"></div>
     </div>
     <div class="row">
@@ -676,7 +677,7 @@ function generatePDF() {
         scrollY: 0,
         x: 0,
         y: 0,
-        windowWidth: 1024
+        windowWidth: 680
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
