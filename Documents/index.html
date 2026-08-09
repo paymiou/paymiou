@@ -25,8 +25,8 @@
     .btn-add { background: #6c757d; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 4px; }
     .btn-submit { display: block; width: 100%; background: #1f4e78; color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 8px rgba(31,78,120,0.3); text-align: center; text-decoration: none; }
     
-    /* 隱藏 PDF 印表機樣式 (生成時啟用) */
-    #pdf-template { display: none; }
+    /* 螢幕外渲染 PDF 模板 (解決 PDF 空白問題) */
+    #pdf-template { position: absolute; left: -9999px; top: 0; width: 750px; }
     .pdf-page { width: 750px; padding: 20px; font-family: "Microsoft JhengHei", "標楷體", sans-serif; background: #fff; color: #000; }
     .pdf-header { display: flex; justify-content: space-between; font-size: 9.5pt; line-height: 1.2; margin-bottom: 5px; }
     .pdf-title { text-align: center; font-size: 16pt; font-weight: bold; margin: 6px 0 2px 0; }
@@ -139,7 +139,7 @@
   <button class="btn-submit" onclick="generatePDF()">📄 產生並下載出差報告單 PDF</button>
 </div>
 
-<!-- PDF 輸出 HTML 模板 -->
+<!-- PDF 輸出模板 (放置於螢幕外) -->
 <div id="pdf-template">
   <div class="pdf-page" id="pdf-content">
     <div class="pdf-header">
@@ -296,9 +296,39 @@ function onModeChange() {
   updateCalculation();
 }
 
+// 起始日期連動（同步更新迄日與下方所有費用的月份/日期）
 function onStartDateChange() {
   document.getElementById('endDate').value = document.getElementById('startDate').value;
   updateDays();
+  syncAllRowDates();
+}
+
+function syncAllRowDates() {
+  const sVal = document.getElementById('startDate').value;
+  if (!sVal) return;
+  const sDate = new Date(sVal);
+  const m = (sDate.getMonth() + 1).toString();
+  const d = sDate.getDate().toString();
+
+  // 同步所有費用列
+  const expCards = document.querySelectorAll('#expensesContainer .card');
+  expCards.forEach(card => {
+    const id = card.id.replace('exp_card_', '');
+    const mEl = document.getElementById(`exp_m_${id}`);
+    const dEl = document.getElementById(`exp_d_${id}`);
+    if (mEl) mEl.value = m;
+    if (dEl) dEl.value = d;
+  });
+
+  // 同步所有報告列
+  const repCards = document.querySelectorAll('#reportsContainer .card');
+  repCards.forEach(card => {
+    const id = card.id.replace('rep_card_', '');
+    const mEl = document.getElementById(`rep_m_${id}`);
+    const dEl = document.getElementById(`rep_d_${id}`);
+    if (mEl) mEl.value = m;
+    if (dEl) dEl.value = d;
+  });
 }
 
 function updateDays() {
@@ -360,7 +390,6 @@ function updateCalculation() {
 
   document.getElementById('previewBox').innerHTML = `💡 <b>自動計算預覽</b>：<br/>- 大眾交通：<b>${totalTransit} 元</b> (${standardRoute})<br/>- 雜費金額：<b>${totalIncidental} 元</b><br/>- 洽辦說明：${detailStr}`;
 
-  // 更新第一筆費用與報告
   const firstExpRoute = document.getElementById('exp_route_1');
   if (firstExpRoute) firstExpRoute.value = standardRoute;
 
@@ -388,7 +417,7 @@ function addExpenseRow(isFirst = false) {
   card.className = 'card';
   card.id = `exp_card_${id}`;
   card.innerHTML = `
-    ${!isFirst ? `<button class="btn-delete" onclick="removeCard('exp_card_${id}', 'exp')">✕ 刪除</button>` : ''}
+    ${!isFirst ? `<button class="btn-delete" onclick="removeCard('exp_card_${id}')">✕ 刪除</button>` : ''}
     <div style="font-weight:bold; font-size:13px; margin-bottom:6px;">費用項目 #${id}</div>
     <div class="row">
       <div class="col"><label>月份</label><input type="text" id="exp_m_${id}" value="${m}"></div>
@@ -427,7 +456,7 @@ function addReportRow(isFirst = false) {
   card.className = 'card';
   card.id = `rep_card_${id}`;
   card.innerHTML = `
-    ${!isFirst ? `<button class="btn-delete" onclick="removeCard('rep_card_${id}', 'rep')">✕ 刪除</button>` : ''}
+    ${!isFirst ? `<button class="btn-delete" onclick="removeCard('rep_card_${id}')">✕ 刪除</button>` : ''}
     <div style="font-weight:bold; font-size:13px; margin-bottom:6px;">洽辦紀錄 #${id}</div>
     <div class="row">
       <div class="col"><label>月份</label><input type="text" id="rep_m_${id}" value="${m}"></div>
@@ -444,7 +473,7 @@ function addReportRow(isFirst = false) {
   if (isFirst) updateCalculation();
 }
 
-function removeCard(cardId, type) {
+function removeCard(cardId) {
   document.getElementById(cardId).remove();
 }
 
@@ -497,7 +526,6 @@ function generatePDF() {
   document.getElementById('p-year').innerText = `${rocY1} 年`;
   document.getElementById('p-year-rep').innerText = `${rocY1} 年`;
 
-  // 渲染費用明細 (填寫筆數 + 1 筆空白列)
   const expTbody = document.getElementById('pdf-expenses-rows');
   expTbody.innerHTML = "";
   let totalAmt = 0;
@@ -526,7 +554,6 @@ function generatePDF() {
     expTbody.appendChild(tr);
   });
 
-  // 1 筆空白列
   const emptyTr = document.createElement('tr');
   emptyTr.style.height = "35px";
   emptyTr.innerHTML = `<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>`;
@@ -534,7 +561,6 @@ function generatePDF() {
 
   document.getElementById('p-total-amt').innerText = totalAmt || 0;
 
-  // 渲染報告紀錄 (填寫筆數 + 1 筆空白列)
   const repTbody = document.getElementById('pdf-reports-rows');
   repTbody.innerHTML = "";
 
@@ -556,32 +582,26 @@ function generatePDF() {
     repTbody.appendChild(tr);
   });
 
-  // 1 筆空白報告列
   const emptyRepTr = document.createElement('tr');
   emptyRepTr.style.height = "48px";
   emptyRepTr.innerHTML = `<td></td><td></td><td colspan="4"></td><td colspan="6"></td>`;
   repTbody.appendChild(emptyRepTr);
 
-  // 付款方式標記
   const payMethod = getSelectedVal('paySelect', 'payCustom');
   let payStr = "款付 ■個人 □匯款 / □領現金金額：";
   if (payMethod === '匯款') payStr = "款付 □個人 ■匯款 / □領現金金額：";
   if (payMethod === '領現金') payStr = "款付 □個人 □匯款 / ■領現金金額：";
   document.getElementById('p-pay-method').innerHTML = `款付旅行社金額：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${payStr}`;
 
-  // 大寫金額 16PT
   const capital = numberToChineseCapital(totalAmt);
   document.getElementById('p-capital-text').innerHTML = `茲領到上列旅費計新台幣 <span style="font-size:16pt; font-weight:bold;">${capital}</span> 元整`;
 
-  // 檔名：YYYYMMDD_出差報告單.pdf
   const dateNum = sDate.getFullYear().toString() +
     (sDate.getMonth() + 1).toString().padStart(2, '0') +
     sDate.getDate().toString().padStart(2, '0');
   const filename = `${dateNum}_出差報告單.pdf`;
 
   const element = document.getElementById('pdf-content');
-  const template = document.getElementById('pdf-template');
-  template.style.display = 'block';
 
   const opt = {
     margin: [10, 10, 10, 10],
@@ -591,9 +611,7 @@ function generatePDF() {
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
-  html2pdf().set(opt).from(element).save().then(() => {
-    template.style.display = 'none';
-  });
+  html2pdf().set(opt).from(element).save();
 }
 </script>
 </body>
