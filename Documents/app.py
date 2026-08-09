@@ -1,5 +1,7 @@
+import os
 import io
 import datetime
+import urllib.request
 import streamlit as st
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -36,62 +38,141 @@ PROJECT_CONFIG = {
     }
 }
 
-font_name = 'Helvetica'
+# ----------------------------------------------------------------------
+# 自動下載與註冊中文字型 (徹底解決網頁版亂碼問題)
+# ----------------------------------------------------------------------
+@st.cache_resource
+def init_chinese_font():
+    font_name = 'CustomChineseFont'
+    font_filename = 'NotoSansTC-Regular.ttf'
+    
+    # 1. 優先搜尋本機電腦 Windows 字型
+    possible_paths = [
+        r'C:\Windows\Fonts\msjh.ttc',
+        r'C:\Windows\Fonts\kaiu.ttf',
+        r'C:\Windows\Fonts\msjh.ttf',
+        font_filename
+    ]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            try:
+                pdfmetrics.registerFont(TTFont(font_name, path))
+                return font_name
+            except Exception:
+                continue
 
+    # 2. 網頁版/手機版環境：自動從 CDN 下載微軟正黑體/思源黑體 TTF
+    url = "https://cdn.jsdelivr.net/npm/@electron-fonts/noto-sans-tc@1.2.0/fonts/NotoSansTC-Regular.ttf"
+    
+    # 使用 urllib 下載
+    try:
+        urllib.request.urlretrieve(url, font_filename)
+        pdfmetrics.registerFont(TTFont(font_name, font_filename))
+        return font_name
+    except Exception:
+        pass
+
+    # 使用 Pyodide HTTP 下載 (網頁端備援)
+    try:
+        import pyodide.http
+        content = pyodide.http.open_url(url).read()
+        with open(font_filename, "wb") as f:
+            f.write(content)
+        pdfmetrics.registerFont(TTFont(font_name, font_filename))
+        return font_name
+    except Exception:
+        pass
+
+    return 'Helvetica'
+
+# ----------------------------------------------------------------------
+# 數字轉國字大寫工具
+# ----------------------------------------------------------------------
 def number_to_chinese_capital(num):
     try:
         num = int(num)
     except (ValueError, TypeError):
         return ""
+    
     digits = ["零", "壹", "貳", "參", "肆", "伍", "陸", "柒", "捌", "玖"]
     units = ["", "拾", "佰", "仟"]
     big_units = ["", "萬", "億"]
-    if num == 0: return "零"
+    
+    if num == 0:
+        return "零"
+    
     str_num = str(num)
     length = len(str_num)
     result = ""
+    
     for i, digit in enumerate(str_num):
         n = int(digit)
         pos = length - 1 - i
         u = pos % 4
         bu = pos // 4
+        
         if n != 0:
             result += digits[n] + units[u]
         else:
             if not result.endswith("零") and u != 0:
                 result += "零"
+                
         if u == 0 and bu > 0:
             if result.endswith("零"):
                 result = result[:-1]
             result += big_units[bu]
+            
     return result.rstrip("零")
 
-def generate_pdf_bytes(form_data):
+# ----------------------------------------------------------------------
+# 生成 PDF 核心邏輯
+# ----------------------------------------------------------------------
+def generate_pdf_bytes(form_data, font_name):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, leftMargin=20, rightMargin=20, topMargin=15, bottomMargin=15)
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=20,
+        rightMargin=20,
+        topMargin=15,
+        bottomMargin=15
+    )
     story = []
     styles = getSampleStyleSheet()
     
     c_style = ParagraphStyle('C', parent=styles['Normal'], fontName=font_name, fontSize=12, leading=15, alignment=1)
     c_left = ParagraphStyle('CL', parent=c_style, alignment=0)
     c_right = ParagraphStyle('CR', parent=c_style, alignment=2)
+
     c_style_10 = ParagraphStyle('C10', parent=styles['Normal'], fontName=font_name, fontSize=10, leading=13, alignment=1)
     c_left_10 = ParagraphStyle('CL10', parent=c_style_10, alignment=0)
     c_target_style = ParagraphStyle('CTarget', parent=styles['Normal'], fontName=font_name, fontSize=9.5, leading=11.5, alignment=0)
 
-    title_style = ParagraphStyle('Title', parent=c_style, fontSize=16, leading=18)
-    subtitle_style = ParagraphStyle('SubTitle', parent=c_style, fontSize=13, leading=15)
-    meta_left = ParagraphStyle('MetaL', parent=c_left, fontSize=9.5, leading=12)
-    meta_right = ParagraphStyle('MetaR', parent=c_right, fontSize=9.5, leading=12)
+    title_style = ParagraphStyle('Title', parent=c_style, fontName=font_name, fontSize=16, leading=18)
+    subtitle_style = ParagraphStyle('SubTitle', parent=c_style, fontName=font_name, fontSize=13, leading=15)
+    meta_left = ParagraphStyle('MetaL', parent=c_left, fontName=font_name, fontSize=9.5, leading=12)
+    meta_right = ParagraphStyle('MetaR', parent=c_right, fontName=font_name, fontSize=9.5, leading=12)
 
     def p(text, style=c_style):
         return Paragraph(str(text) if text else "", style)
 
-    top_meta = [[p("編號：4-AB-c023(1.0)<br/>版次：1.0", meta_left), p("國內外出差旅費報告單", c_style), p("制定單位：幕僚總部人資課<br/>修訂日期：2019/09/10", meta_right)]]
+    top_meta = [
+        [
+            p("編號：4-AB-c023(1.0)<br/>版次：1.0", meta_left),
+            p("國內外出差旅費報告單", c_style),
+            p("制定單位：幕僚總部人資課<br/>修訂日期：2019/09/10", meta_right)
+        ]
+    ]
     t_top = Table(top_meta, colWidths=[140, 275, 140], rowHeights=28)
-    t_top.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'MIDDLE'), ('TOPPADDING', (0, 0), (-1, -1), 2), ('BOTTOMPADDING', (0, 0), (-1, -1), 2)]))
+    t_top.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 2),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 2),
+    ]))
     story.append(t_top)
     story.append(Spacer(1, 4))
+
     story.append(p("財團法人慈心有機農業發展基金會", title_style))
     story.append(Spacer(1, 8))
     story.append(p("國內外出差旅費報告單", subtitle_style))
@@ -100,9 +181,19 @@ def generate_pdf_bytes(form_data):
     col_w = [25, 25, 110, 45, 30, 30, 30, 30, 65, 45, 50, 70]
     data = []
 
-    data.append([p("姓 名"), "", p(form_data.get('name', ''), c_left), "", "", "", p("單位代號名稱及職稱", c_style_10), "", "", p(form_data.get('dept', ''), c_left), "", ""])
-    data.append([p("出差事由", c_style_10), "", p(form_data.get('reason', ''), c_left_10), "", "", "", p("出差國家及城市", c_style_10), "", "", p(form_data.get('city', ''), c_left), "", ""])
+    # Row 0: 基本資料 1
+    data.append([
+        p("姓 名"), "", p(form_data.get('name', ''), c_left), "", "", "",
+        p("單位代號名稱及職稱", c_style_10), "", "", p(form_data.get('dept', ''), c_left), "", ""
+    ])
 
+    # Row 1: 基本資料 2
+    data.append([
+        p("出差事由", c_style_10), "", p(form_data.get('reason', ''), c_left_10), "", "", "",
+        p("出差國家及城市", c_style_10), "", "", p(form_data.get('city', ''), c_left), "", ""
+    ])
+
+    # Row 2: 時間
     y1, m1, d1 = form_data.get('y1', ''), form_data.get('m1', ''), form_data.get('d1', '')
     y2, m2, d2 = form_data.get('y2', ''), form_data.get('m2', ''), form_data.get('d2', '')
     days, receipts = form_data.get('days', ''), form_data.get('receipts', '')
@@ -110,8 +201,21 @@ def generate_pdf_bytes(form_data):
     time_str = f"民國 {y1} 年 {m1} 月 {d1} 日起至民國 {y2} 年 {m2} 月 {d2} 日止共計 {days} 天/附單據 {receipts} 張/匯率："
     data.append([p("出差時間", c_style_10), "", p(time_str, c_left_10), "", "", "", "", "", "", "", "", ""])
 
-    data.append([p(f"{y1} 年"), "", p("行 程"), p("交 通 費"), "", "", p("膳 費"), p("宿 費"), p("其 他 費 用"), "", p("私車油資<br/>補貼", c_style_10), p("合 計")])
-    data.append([p("月"), p("日"), "", p("大眾交通工具", c_style_10), p("飛機", c_style_10), p("計程車", c_style_10), "", "", p("摘 要"), p("金額"), "", ""])
+    # Row 3 & 4: 表頭
+    data.append([
+        p(f"{y1} 年"), "", p("行 程"),
+        p("交 通 費"), "", "",
+        p("膳 費"), p("宿 費"),
+        p("其 他 費 用"), "",
+        p("私車油資<br/>補貼", c_style_10), p("合 計")
+    ])
+    data.append([
+        p("月"), p("日"), "",
+        p("大眾交通工具", c_style_10), p("飛機", c_style_10), p("計程車", c_style_10),
+        "", "",
+        p("摘 要"), p("金額"),
+        "", ""
+    ])
 
     expenses = form_data.get('expenses', [])
     total_amount = 0
@@ -128,9 +232,18 @@ def generate_pdf_bytes(form_data):
             stay = int(item.get('stay', 0) or 0)
             amt = int(item.get('amount', 0) or 0)
             gas = int(item.get('gas_subsidy', 0) or 0)
+
             row_total = pub + flight + taxi + meal + stay + amt + gas
             total_amount += row_total
-            data.append([p(item.get('m', '')), p(item.get('d', '')), p(item.get('route', ''), c_left_10), p(str(pub) if pub else ""), p(str(flight) if flight else ""), p(str(taxi) if taxi else ""), p(str(meal) if meal else ""), p(str(stay) if stay else ""), p(item.get('other_desc', ''), c_style), p(str(amt) if amt else "", c_style), p(str(gas) if gas else "", c_style_10), p(str(row_total) if row_total else "", c_style)])
+
+            data.append([
+                p(item.get('m', '')), p(item.get('d', '')), p(item.get('route', ''), c_left_10),
+                p(str(pub) if pub else ""), p(str(flight) if flight else ""), p(str(taxi) if taxi else ""),
+                p(str(meal) if meal else ""), p(str(stay) if stay else ""),
+                p(item.get('other_desc', ''), c_style), p(str(amt) if amt else "", c_style),
+                p(str(gas) if gas else "", c_style_10),
+                p(str(row_total) if row_total else "", c_style)
+            ])
         else:
             data.append([""] * 12)
 
@@ -141,7 +254,10 @@ def generate_pdf_bytes(form_data):
     data.append([p("出 差 報 告"), "", "", "", "", "", "", "", "", "", "", ""])
 
     rep_header1_idx = len(data)
-    data.append([p(f"{y1} 年"), "", p("訪洽公司/機構名稱<br/>及接洽人員姓名"), "", "", "", p("洽 辦 事 項 說 明"), "", "", "", "", ""])
+    data.append([
+        p(f"{y1} 年"), "", p("訪洽公司/機構名稱<br/>及接洽人員姓名"), "", "", "",
+        p("洽 辦 事 項 說 明"), "", "", "", "", ""
+    ])
     rep_header2_idx = len(data)
     data.append([p("月"), p("日"), "", "", "", "", "", "", "", "", "", ""])
 
@@ -155,30 +271,59 @@ def generate_pdf_bytes(form_data):
             rep = reports[i]
             target_str = rep.get('target', '').replace('\n', '<br/>')
             detail_str = rep.get('detail', '').replace('\n', '<br/>')
-            data.append([p(rep.get('m', '')), p(rep.get('d', '')), p(target_str, c_target_style), "", "", "", p(detail_str, c_left), "", "", "", "", ""])
+            data.append([
+                p(rep.get('m', '')), p(rep.get('d', '')),
+                p(target_str, c_target_style), "", "", "",
+                p(detail_str, c_left), "", "", "", "", ""
+            ])
         else:
             data.append([""] * 12)
     rep_end_idx = len(data) - 1
 
-    row_heights = [25, 25, 25, 25, 25] + [35]*num_exp_rows + [25, 25, 25, 25] + [48]*num_rep_rows
+    row_heights = [25, 25, 25, 25, 25]
+    for _ in range(num_exp_rows):
+        row_heights.append(35)
+    row_heights.append(25)
+    row_heights.append(25)
+    row_heights.append(25)
+    row_heights.append(25)
+    for _ in range(num_rep_rows):
+        row_heights.append(48)
 
     t_style = [
         ('GRID', (0, 0), (-1, total_row_idx), 0.5, colors.black),
         ('LINEABOVE', (0, report_title_row_idx), (11, report_title_row_idx), 0.5, colors.black),
         ('LINEBELOW', (0, report_title_row_idx), (11, report_title_row_idx), 0.5, colors.black),
         ('GRID', (0, rep_header1_idx), (-1, rep_end_idx), 0.5, colors.black),
+
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
         ('TOPPADDING', (0, 0), (-1, -1), 3),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
         ('LEFTPADDING', (0, 0), (-1, -1), 2),
         ('RIGHTPADDING', (0, 0), (-1, -1), 2),
-        ('SPAN', (0, 0), (1, 0)), ('SPAN', (2, 0), (5, 0)), ('SPAN', (6, 0), (8, 0)), ('SPAN', (9, 0), (11, 0)),
-        ('SPAN', (0, 1), (1, 1)), ('SPAN', (2, 1), (5, 1)), ('SPAN', (6, 1), (8, 1)), ('SPAN', (9, 1), (11, 1)),
+
+        ('SPAN', (0, 0), (1, 0)), ('SPAN', (2, 0), (5, 0)),
+        ('SPAN', (6, 0), (8, 0)), ('SPAN', (9, 0), (11, 0)),
+        ('SPAN', (0, 1), (1, 1)), ('SPAN', (2, 1), (5, 1)),
+        ('SPAN', (6, 1), (8, 1)), ('SPAN', (9, 1), (11, 1)),
+
         ('SPAN', (0, 2), (1, 2)), ('SPAN', (2, 2), (11, 2)),
-        ('SPAN', (0, 3), (1, 3)), ('SPAN', (2, 3), (2, 4)), ('SPAN', (3, 3), (5, 3)), ('SPAN', (6, 3), (6, 4)), ('SPAN', (7, 3), (7, 4)), ('SPAN', (8, 3), (9, 3)), ('SPAN', (10, 3), (10, 4)), ('SPAN', (11, 3), (11, 4)),
+
+        ('SPAN', (0, 3), (1, 3)),
+        ('SPAN', (2, 3), (2, 4)),
+        ('SPAN', (3, 3), (5, 3)),
+        ('SPAN', (6, 3), (6, 4)),
+        ('SPAN', (7, 3), (7, 4)),
+        ('SPAN', (8, 3), (9, 3)),
+        ('SPAN', (10, 3), (10, 4)),
+        ('SPAN', (11, 3), (11, 4)),
+
         ('SPAN', (0, total_row_idx), (10, total_row_idx)),
         ('SPAN', (0, report_title_row_idx), (11, report_title_row_idx)),
-        ('SPAN', (0, rep_header1_idx), (1, rep_header1_idx)), ('SPAN', (2, rep_header1_idx), (5, rep_header2_idx)), ('SPAN', (6, rep_header1_idx), (11, rep_header2_idx)),
+
+        ('SPAN', (0, rep_header1_idx), (1, rep_header1_idx)),
+        ('SPAN', (2, rep_header1_idx), (5, rep_header2_idx)),
+        ('SPAN', (6, rep_header1_idx), (11, rep_header2_idx)),
     ]
 
     for r in range(rep_start_idx, rep_end_idx + 1):
@@ -188,24 +333,63 @@ def generate_pdf_bytes(form_data):
     table = Table(data, colWidths=col_w, rowHeights=row_heights)
     table.setStyle(TableStyle(t_style))
     story.append(table)
+
     story.append(Spacer(1, 12))
 
     capital_amt = number_to_chinese_capital(total_amount)
     capital_text = f"茲領到上列旅費計新台幣 <font size=\"16\"><b>{capital_amt}</b></font> 元整"
 
     pay_method = form_data.get('payment_method', '個人')
-    if pay_method == "匯款": pay_text = "款付 □個人  ■匯款 / □領現金金額："
-    elif pay_method == "領現金": pay_text = "款付 □個人  □匯款 / ■領現金金額："
-    else: pay_text = "款付 ■個人  □匯款 / □領現金金額："
+    if pay_method == "匯款":
+        pay_text = "款付 □個人  ■匯款 / □領現金金額："
+    elif pay_method == "領現金":
+        pay_text = "款付 □個人  □匯款 / ■領現金金額："
+    else:
+        pay_text = "款付 ■個人  □匯款 / □領現金金額："
 
-    approval_data = [[p("核定：", c_left), "", "", "", p("覆核：", c_left), "", "", "", p("出差人：", c_left), "", "", ""], [p("款付旅行社金額：", c_left), "", "", "", "", p(pay_text, c_left), "", "", "", "", "", ""], [p(capital_text, c_left), "", "", "", "", "", "", "", p("領款人簽章：", c_left), "", "", ""]]
-    t_approval_style = [('VALIGN', (0, 0), (-1, -1), 'MIDDLE'), ('TOPPADDING', (0, 0), (-1, -1), 3), ('BOTTOMPADDING', (0, 0), (-1, -1), 3), ('LEFTPADDING', (0, 0), (-1, -1), 2), ('RIGHTPADDING', (0, 0), (-1, -1), 2), ('SPAN', (0, 0), (3, 0)), ('SPAN', (4, 0), (7, 0)), ('SPAN', (8, 0), (11, 0)), ('SPAN', (0, 1), (4, 1)), ('SPAN', (5, 1), (11, 1)), ('SPAN', (0, 2), (7, 2)), ('SPAN', (8, 2), (11, 2))]
+    approval_data = [
+        [
+            p("核定：", c_left), "", "", "",
+            p("覆核：", c_left), "", "", "",
+            p("出差人：", c_left), "", "", ""
+        ],
+        [
+            p("款付旅行社金額：", c_left), "", "", "", "",
+            p(pay_text, c_left), "", "", "", "", "", ""
+        ],
+        [
+            p(capital_text, c_left), "", "", "", "", "", "", "",
+            p("領款人簽章：", c_left), "", "", ""
+        ]
+    ]
+
+    t_approval_style = [
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('LEFTPADDING', (0, 0), (-1, -1), 2),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 2),
+
+        ('SPAN', (0, 0), (3, 0)), ('SPAN', (4, 0), (7, 0)), ('SPAN', (8, 0), (11, 0)),
+        ('SPAN', (0, 1), (4, 1)), ('SPAN', (5, 1), (11, 1)),
+        ('SPAN', (0, 2), (7, 2)), ('SPAN', (8, 2), (11, 2)),
+    ]
+
     t_approval = Table(approval_data, colWidths=col_w, rowHeights=30)
     t_approval.setStyle(TableStyle(t_approval_style))
     story.append(t_approval)
+
     story.append(Spacer(1, 10))
 
-    notes = "備註：<br/>1. 依稅法規定，出差報告請逐日填寫，並附相關業務報告<br/>2. 若有出差前已核准簽呈請註明簽呈代號於出差事由欄位中。<br/>3. 若為國外差旅申請請註明外幣、換算後台幣及匯率。<br/>   設算匯率以出國當日台灣銀行兌匯匯率計之，並說明計算式。<br/>4. 交通費請附相關票根、登機證、旅行社代收轉付收據等憑證。過路費屬其他費用，需附記錄證明。<br/>5. 膳費及宿費請附發票或收據。"
+    notes = (
+        "備註：<br/>"
+        "1. 依稅法規定，出差報告請逐日填寫，並附相關業務報告<br/>"
+        "2. 若有出差前已核准簽呈請註明簽呈代號於出差事由欄位中。<br/>"
+        "3. 若為國外差旅申請請註明外幣、換算後台幣及匯率。<br/>"
+        "   設算匯率以出國當日台灣銀行兌匯匯率計之，並說明計算式。<br/>"
+        "4. 交通費請附相關票根、登機證、旅行社代收轉付收據等憑證。過路費屬其他費用，需附記錄證明。<br/>"
+        "5. 膳費及宿費請附發票或收據。"
+    )
     story.append(p(notes, c_left))
 
     doc.build(story)
@@ -213,7 +397,15 @@ def generate_pdf_bytes(form_data):
     buffer.close()
     return pdf_data
 
+# ----------------------------------------------------------------------
+# Streamlit 主介面
+# ----------------------------------------------------------------------
 st.set_page_config(page_title="出差旅費填報系統", page_icon="📝", layout="centered")
+
+# 初始化中文字型
+with st.spinner("系統字型初始化中，請稍候..."):
+    current_font = init_chinese_font()
+
 st.title("📝 出差旅費報告單 - 填報系統")
 
 st.subheader("📌 報帳模式")
@@ -333,7 +525,7 @@ form_data = {
     'days': days, 'receipts': receipts, 'expenses': expenses_data, 'reports': reports_data
 }
 
-pdf_bytes = generate_pdf_bytes(form_data)
+pdf_bytes = generate_pdf_bytes(form_data, current_font)
 
 st.download_button(
     label="📄 產生並下載出差報告單 PDF",
