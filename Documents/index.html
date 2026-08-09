@@ -60,33 +60,44 @@
     .spinner { width: 45px; height: 45px; border: 5px solid #e0e0e0; border-top: 5px solid #1f4e78; border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-    /* PDF 模板 (渲染時放最左上角，且寬度固定 800px，被 Loading 遮蓋) */
+    /* PDF 模板 (全螢幕固定定位，避免手機捲動與頂部空白) */
     #pdf-template { 
       display: none; 
-      position: absolute; 
+      position: fixed; 
       top: 0; 
       left: 0; 
-      width: 800px; 
+      width: 100vw; 
+      height: 100vh; 
       background: #fff; 
       z-index: 99990; 
+      overflow: auto;
     }
-    .pdf-page { width: 750px; padding: 20px; font-family: "Microsoft JhengHei", "標楷體", sans-serif; background: #fff; color: #000; margin: 0 auto; }
-    .pdf-header { display: flex; justify-content: space-between; font-size: 9.5pt; line-height: 1.2; margin-bottom: 5px; }
-    .pdf-title { text-align: center; font-size: 16pt; font-weight: bold; margin: 6px 0 2px 0; }
-    .pdf-subtitle { text-align: center; font-size: 13pt; margin-bottom: 8px; }
-    .pdf-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
-    .pdf-table td, .pdf-table th { border: 1px solid #000; padding: 4px 2px; text-align: center; font-size: 12pt; vertical-align: middle; }
-    .pdf-table .text-left { text-align: left; padding-left: 4px; }
-    .pdf-table .font-10 { font-size: 10pt; line-height: 1.2; }
-    .pdf-table .font-95 { font-size: 9.5pt; line-height: 1.2; text-align: left; }
-    .approval-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-    .approval-table td { border: none; padding: 4px; text-align: left; font-size: 12pt; }
-    .notes-box { font-size: 9pt; line-height: 1.4; margin-top: 10px; }
+    /* 調整寬度為 680px，確保 100% 完美放入 A4 頁面 */
+    .pdf-page { 
+      width: 680px; 
+      padding: 15px; 
+      box-sizing: border-box;
+      font-family: "Microsoft JhengHei", "標楷體", sans-serif; 
+      background: #fff; 
+      color: #000; 
+      margin: 0 auto; 
+    }
+    .pdf-header { display: flex; justify-content: space-between; font-size: 8.5pt; line-height: 1.2; margin-bottom: 5px; }
+    .pdf-title { text-align: center; font-size: 15pt; font-weight: bold; margin: 4px 0 2px 0; }
+    .pdf-subtitle { text-align: center; font-size: 12pt; margin-bottom: 6px; }
+    .pdf-table { width: 100%; border-collapse: collapse; margin-top: 4px; table-layout: fixed; }
+    .pdf-table td, .pdf-table th { border: 1px solid #000; padding: 3px 1px; text-align: center; font-size: 10.5pt; vertical-align: middle; word-break: break-all; }
+    .pdf-table .text-left { text-align: left; padding-left: 3px; }
+    .pdf-table .font-10 { font-size: 9.5pt; line-height: 1.1; }
+    .pdf-table .font-95 { font-size: 9pt; line-height: 1.1; text-align: left; padding-left: 2px; }
+    .approval-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+    .approval-table td { border: none; padding: 3px; text-align: left; font-size: 10.5pt; }
+    .notes-box { font-size: 8.5pt; line-height: 1.3; margin-top: 6px; }
   </style>
 </head>
 <body>
 
-<!-- 全螢幕遮罩 (用來遮住 PDF 渲染過程) -->
+<!-- 全螢幕遮罩 -->
 <div id="pdf-loading">
   <div class="spinner"></div>
   <div style="margin-top: 15px; font-size: 18px; font-weight: bold; color: #1f4e78;">📄 PDF 產生中，請稍候...</div>
@@ -173,8 +184,19 @@
     <div class="section-title">💰 費用明細紀錄</div>
     <div class="row" style="align-items: flex-end;">
       <div style="flex: 0 0 130px;">
-        <label>出差人數 (1~10)</label>
-        <input type="number" id="numPeople" value="1" min="1" max="10" onchange="updateCalculation()" style="text-align: center;">
+        <label>出差人數</label>
+        <select id="numPeople" onchange="updateCalculation()" style="text-align: center;">
+          <option value="1" selected>1 人</option>
+          <option value="2">2 人</option>
+          <option value="3">3 人</option>
+          <option value="4">4 人</option>
+          <option value="5">5 人</option>
+          <option value="6">6 人</option>
+          <option value="7">7 人</option>
+          <option value="8">8 人</option>
+          <option value="9">9 人</option>
+          <option value="10">10 人</option>
+        </select>
       </div>
       <div style="flex: 1;">
         <label id="lblIncidental" class="checkbox-label checked">
@@ -196,72 +218,72 @@
   </div>
 </div>
 
-<!-- PDF 輸出模板 (渲染時固定 800px，保證不被裁切) -->
+<!-- PDF 輸出模板 -->
 <div id="pdf-template">
   <div class="pdf-page" id="pdf-content">
     <div class="pdf-header">
       <div>編號：4-AB-c023(1.0)<br/>版次：1.0</div>
-      <div style="font-size:12pt; font-weight:bold; text-align:center;">國內外出差旅費報告單</div>
+      <div style="font-size:11pt; font-weight:bold; text-align:center;">國內外出差旅費報告單</div>
       <div style="text-align:right;">制定單位：幕僚總部人資課<br/>修訂日期：2019/09/10</div>
     </div>
     <div class="pdf-title">財團法人慈心有機農業發展基金會</div>
     <div class="pdf-subtitle">國內外出差旅費報告單</div>
 
     <table class="pdf-table">
-      <tr style="height:30px;">
-        <td style="width:50px;">姓 名</td>
-        <td colspan="5" class="text-left" id="p-name" style="width:260px;"></td>
-        <td colspan="2" class="font-10" style="width:110px;">單位代號名稱及職稱</td>
+      <tr style="height:28px;">
+        <td style="width:45px;">姓 名</td>
+        <td colspan="5" class="text-left" id="p-name" style="width:220px;"></td>
+        <td colspan="2" class="font-10" style="width:100px;">單位代號名稱及職稱</td>
         <td colspan="4" class="text-left" id="p-dept"></td>
       </tr>
-      <tr style="height:30px;">
+      <tr style="height:28px;">
         <td class="font-10">出差事由</td>
         <td colspan="5" class="text-left font-10" id="p-reason"></td>
         <td colspan="2" class="font-10">出差國家及城市</td>
         <td colspan="4" class="text-left" id="p-city"></td>
       </tr>
-      <tr style="height:30px;">
+      <tr style="height:28px;">
         <td class="font-10">出差時間</td>
         <td colspan="11" class="text-left font-10" id="p-time"></td>
       </tr>
-      <tr style="height:25px;">
-        <td id="p-year" style="width:40px;"></td>
+      <tr style="height:24px;">
+        <td id="p-year" style="width:36px;"></td>
         <td colspan="2">行 程</td>
         <td colspan="3">交 通 費</td>
-        <td>膳 費</td>
-        <td>宿 費</td>
+        <td style="width:40px;">膳 費</td>
+        <td style="width:40px;">宿 費</td>
         <td colspan="2">其 他 費 用</td>
-        <td class="font-10">私車油資<br/>補貼</td>
-        <td>合 計</td>
+        <td class="font-10" style="width:48px;">私車油資<br/>補貼</td>
+        <td style="width:55px;">合 計</td>
       </tr>
-      <tr style="height:25px;">
-        <td>月</td>
-        <td>日</td>
+      <tr style="height:24px;">
+        <td style="width:25px;">月</td>
+        <td style="width:25px;">日</td>
+        <td style="width:140px;"></td>
+        <td class="font-10" style="width:50px;">大眾交通工具</td>
+        <td class="font-10" style="width:35px;">飛機</td>
+        <td class="font-10" style="width:40px;">計程車</td>
         <td></td>
-        <td class="font-10">大眾交通工具</td>
-        <td class="font-10">飛機</td>
-        <td class="font-10">計程車</td>
         <td></td>
-        <td></td>
-        <td>摘 要</td>
-        <td>金額</td>
+        <td style="width:45px;">摘 要</td>
+        <td style="width:45px;">金額</td>
         <td></td>
         <td></td>
       </tr>
       <tbody id="pdf-expenses-rows"></tbody>
-      <tr style="height:30px;">
+      <tr style="height:28px;">
         <td colspan="11">總 計</td>
         <td id="p-total-amt"></td>
       </tr>
-      <tr style="height:25px;">
+      <tr style="height:24px;">
         <td colspan="12" style="font-weight:bold;">出 差 報 告</td>
       </tr>
-      <tr style="height:25px;">
+      <tr style="height:24px;">
         <td id="p-year-rep"></td>
         <td colspan="5">訪洽公司/機構名稱及接洽人員姓名</td>
         <td colspan="6">洽 辦 事 項 說 明</td>
       </tr>
-      <tr style="height:25px;">
+      <tr style="height:24px;">
         <td>月</td>
         <td>日</td>
         <td colspan="4"></td>
@@ -271,15 +293,15 @@
     </table>
 
     <table class="approval-table">
-      <tr style="height:30px;">
+      <tr style="height:26px;">
         <td style="width:33%;">核定：</td>
         <td style="width:33%;">覆核：</td>
         <td style="width:34%;">出差人：</td>
       </tr>
-      <tr style="height:30px;">
+      <tr style="height:26px;">
         <td colspan="3" id="p-pay-method">款付旅行社金額：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;款付 ■個人 □匯款 / □領現金金額：</td>
       </tr>
-      <tr style="height:35px;">
+      <tr style="height:30px;">
         <td colspan="2" id="p-capital-text">茲領到上列旅費計新台幣 元整</td>
         <td>領款人簽章：</td>
       </tr>
@@ -481,7 +503,7 @@ function addExpenseRow(isFirst = false) {
       <div class="col" style="flex:2;"><label>行程</label><input type="text" id="exp_route_${id}"></div>
     </div>
     <div class="row">
-      <div class="col"><label>大眾交通金額</label><input type="text" id="exp_pub_${id}"></div>
+      <div class="col"><label>大眾交通金額</label><input type="number" id="exp_pub_${id}" oninput="updateCalculation()"></div>
       <div class="col">
         <label>摘要</label>
         <select id="exp_desc_${id}">
@@ -491,7 +513,7 @@ function addExpenseRow(isFirst = false) {
           <option value="" ${!isFirst ? 'selected' : ''}>空白</option>
         </select>
       </div>
-      <div class="col"><label>雜費金額</label><input type="text" id="exp_amt_${id}"></div>
+      <div class="col"><label>雜費金額</label><input type="number" id="exp_amt_${id}" oninput="updateCalculation()"></div>
     </div>
   `;
   container.appendChild(card);
@@ -528,11 +550,12 @@ function addReportRow(isFirst = false) {
 
 function removeCard(cardId) {
   document.getElementById(cardId).remove();
+  updateCalculation();
 }
 
 function numberToChineseCapital(num) {
   num = parseInt(num) || 0;
-  if (num === 0) return "零";
+  if (num === 0) return "";
   const digits = ["零", "壹", "貳", "參", "肆", "伍", "陸", "柒", "捌", "玖"];
   const units = ["", "拾", "佰", "仟"];
   const bigUnits = ["", "萬", "億"];
@@ -551,32 +574,33 @@ function numberToChineseCapital(num) {
 }
 
 function generatePDF() {
-  // 1. 【防裁切神招】強制捲動到頁面最頂端，避免截圖時偏移
   window.scrollTo(0, 0);
 
-  // 2. 顯示遮罩與排版
   const loadingOverlay = document.getElementById('pdf-loading');
   const template = document.getElementById('pdf-template');
   loadingOverlay.style.display = 'flex';
   template.style.display = 'block';
 
-  // 3. 填入報表資料
   const sDate = getParsedDate(document.getElementById('startDate').value);
   const eDate = getParsedDate(document.getElementById('endDate').value);
   const rocY1 = sDate.y ? (parseInt(sDate.y, 10) - 1911).toString() : "";
   const rocY2 = eDate.y ? (parseInt(eDate.y, 10) - 1911).toString() : "";
 
-  document.getElementById('p-name').innerText = document.getElementById('empName').value;
-  document.getElementById('p-dept').innerText = getSelectedVal('deptSelect', 'deptCustom');
-  document.getElementById('p-reason').innerText = getSelectedVal('reasonSelect', 'reasonCustom');
-  document.getElementById('p-city').innerText = getSelectedVal('citySelect', 'cityCustom');
+  document.getElementById('p-name').innerText = document.getElementById('empName').value || "";
+  document.getElementById('p-dept').innerText = getSelectedVal('deptSelect', 'deptCustom') || "";
+  document.getElementById('p-reason').innerText = getSelectedVal('reasonSelect', 'reasonCustom') || "";
+  document.getElementById('p-city').innerText = getSelectedVal('citySelect', 'cityCustom') || "";
 
-  const days = document.getElementById('totalDays').value;
-  const receipts = document.getElementById('totalReceipts').value;
+  const days = document.getElementById('totalDays').value || "";
+  const receipts = document.getElementById('totalReceipts').value || "";
 
-  document.getElementById('p-time').innerText = `民國 ${rocY1} 年 ${sDate.m} 月 ${sDate.d} 日起至民國 ${rocY2} 年 ${eDate.m} 月 ${eDate.d} 日止共計 ${days} 天/附單據 ${receipts} 張/匯率：`;
-  document.getElementById('p-year').innerText = `${rocY1} 年`;
-  document.getElementById('p-year-rep').innerText = `${rocY1} 年`;
+  const startStr = rocY1 ? `民國 ${rocY1} 年 ${sDate.m} 月 ${sDate.d} 日` : "";
+  const endStr = rocY2 ? `民國 ${rocY2} 年 ${eDate.m} 月 ${eDate.d} 日` : "";
+  const timeText = (startStr || endStr) ? `${startStr}起至${endStr}止 共計 ${days} 天/附單據 ${receipts} 張/匯率：` : "";
+
+  document.getElementById('p-time').innerText = timeText;
+  document.getElementById('p-year').innerText = rocY1 ? `${rocY1} 年` : "";
+  document.getElementById('p-year-rep').innerText = rocY1 ? `${rocY1} 年` : "";
 
   const expTbody = document.getElementById('pdf-expenses-rows');
   expTbody.innerHTML = "";
@@ -587,25 +611,27 @@ function generatePDF() {
     const m = document.getElementById(`exp_m_${id}`)?.value || "";
     const d = document.getElementById(`exp_d_${id}`)?.value || "";
     const route = document.getElementById(`exp_route_${id}`)?.value || "";
-    const pub = parseInt(document.getElementById(`exp_pub_${id}`)?.value) || 0;
+    const pubVal = document.getElementById(`exp_pub_${id}`)?.value;
+    const pub = pubVal !== "" && pubVal !== undefined ? parseInt(pubVal) : 0;
     const desc = document.getElementById(`exp_desc_${id}`)?.value || "";
-    const amt = parseInt(document.getElementById(`exp_amt_${id}`)?.value) || 0;
+    const amtVal = document.getElementById(`exp_amt_${id}`)?.value;
+    const amt = amtVal !== "" && amtVal !== undefined ? parseInt(amtVal) : 0;
 
     const rowTotal = pub + amt;
     totalAmt += rowTotal;
 
     const tr = document.createElement('tr');
-    tr.style.height = "35px";
+    tr.style.height = "32px";
     tr.innerHTML = `<td>${m}</td><td>${d}</td><td class="text-left font-10">${route}</td><td>${pub || ''}</td><td></td><td></td><td></td><td></td><td>${desc}</td><td>${amt || ''}</td><td class="font-10"></td><td>${rowTotal || ''}</td>`;
     expTbody.appendChild(tr);
   });
 
   const emptyTr = document.createElement('tr');
-  emptyTr.style.height = "35px";
+  emptyTr.style.height = "32px";
   emptyTr.innerHTML = `<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>`;
   expTbody.appendChild(emptyTr);
 
-  document.getElementById('p-total-amt').innerText = totalAmt || 0;
+  document.getElementById('p-total-amt').innerText = totalAmt || "";
 
   const repTbody = document.getElementById('pdf-reports-rows');
   repTbody.innerHTML = "";
@@ -618,13 +644,13 @@ function generatePDF() {
     const detail = document.getElementById(`rep_detail_${id}`)?.value || "";
 
     const tr = document.createElement('tr');
-    tr.style.height = "48px";
+    tr.style.height = "42px";
     tr.innerHTML = `<td>${m}</td><td>${d}</td><td colspan="4" class="font-95">${target}</td><td colspan="6" class="text-left">${detail}</td>`;
     repTbody.appendChild(tr);
   });
 
   const emptyRepTr = document.createElement('tr');
-  emptyRepTr.style.height = "48px";
+  emptyRepTr.style.height = "42px";
   emptyRepTr.innerHTML = `<td></td><td></td><td colspan="4"></td><td colspan="6"></td>`;
   repTbody.appendChild(emptyRepTr);
 
@@ -635,29 +661,31 @@ function generatePDF() {
   document.getElementById('p-pay-method').innerHTML = `款付旅行社金額：&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;${payStr}`;
 
   const capital = numberToChineseCapital(totalAmt);
-  document.getElementById('p-capital-text').innerHTML = `茲領到上列旅費計新台幣 <span style="font-size:16pt; font-weight:bold;">${capital}</span> 元整`;
+  document.getElementById('p-capital-text').innerHTML = `茲領到上列旅費計新台幣 <span style="font-size:15pt; font-weight:bold;">${capital}</span> 元整`;
 
   const filenameDate = sDate.y ? `${sDate.y}${sDate.m.padStart(2,'0')}${sDate.d.padStart(2,'0')}` : "出差";
   const filename = `${filenameDate}_出差報告單.pdf`;
 
   const element = document.getElementById('pdf-content');
 
-  // 4. 強制延遲 800ms，保證瀏覽器有充分時間畫完模板且置頂
   setTimeout(() => {
     const opt = {
-      margin: [10, 10, 10, 10],
+      margin: [8, 8, 8, 8],
       filename: filename,
-      image: { type: 'jpeg', quality: 1 },
+      image: { type: 'jpeg', quality: 0.98 },
       html2canvas: { 
         scale: 2, 
         logging: false, 
-        windowWidth: 800 // 強制以 800px 電腦版寬度截圖，解決手機裁切
+        scrollX: 0,
+        scrollY: 0,
+        x: 0,
+        y: 0,
+        windowWidth: 1024
       },
       jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
     html2pdf().set(opt).from(element).save().then(() => {
-      // 5. 下載成功後還原狀態
       template.style.display = 'none';
       loadingOverlay.style.display = 'none';
     }).catch(err => {
