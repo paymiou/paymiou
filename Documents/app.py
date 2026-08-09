@@ -2,6 +2,7 @@ import os
 import io
 import datetime
 import urllib.request
+import base64
 import streamlit as st
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -39,14 +40,13 @@ PROJECT_CONFIG = {
 }
 
 # ----------------------------------------------------------------------
-# 自動下載與註冊中文字型 (已加速快取)
+# 自動下載與註冊中文字型
 # ----------------------------------------------------------------------
 @st.cache_resource(show_spinner=False)
 def init_chinese_font():
     font_name = 'CustomChineseFont'
     font_filename = 'NotoSansTC-Regular.ttf'
     
-    # 若本機或快取已存在字型，直接註冊
     if os.path.exists(font_filename):
         try:
             pdfmetrics.registerFont(TTFont(font_name, font_filename))
@@ -515,7 +515,6 @@ if 'exp_rows' not in st.session_state:
 expenses_data = []
 for i in range(st.session_state.exp_rows):
     with st.expander(f"費用項目 #{i+1}", expanded=(i==0)):
-        # 修改：月份與日期並排為一列 (1:1 比例)
         col_em, col_ed, col_er = st.columns([1, 1, 2])
         with col_em:
             e_m = st.text_input(f"月份 #{i+1}", value=m1, key=f"em_{i}")
@@ -564,7 +563,6 @@ if 'rep_rows' not in st.session_state:
 reports_data = []
 for i in range(st.session_state.rep_rows):
     with st.expander(f"洽辦紀錄 #{i+1}", expanded=(i==0)):
-        # 修改：報告月份與日期並排為一列 (1:1 比例)
         col_rm, col_rd = st.columns(2)
         with col_rm:
             r_m = st.text_input(f"報告月份 #{i+1}", value=m1, key=f"rm_{i}")
@@ -606,10 +604,23 @@ form_data = {
 pdf_bytes = generate_pdf_bytes(form_data, current_font)
 export_filename = f"{start_date.strftime('%Y%m%d')}_出差報告單.pdf"
 
-st.download_button(
-    label="📄 產生並下載出差報告單 PDF",
-    data=pdf_bytes,
-    file_name=export_filename,
-    mime="application/pdf",
-    use_container_width=True
-)
+# 改用 Base64 HTML 連結下載，解決檔名 Hash 亂碼問題
+b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
+download_html = f'''
+    <a href="data:application/pdf;base64,{b64_pdf}" download="{export_filename}" target="_blank" style="
+        display: block;
+        width: 100%;
+        text-align: center;
+        background-color: #1f4e78;
+        color: white;
+        padding: 14px 0px;
+        font-size: 18px;
+        font-weight: bold;
+        border-radius: 8px;
+        text-decoration: none;
+        margin-top: 10px;
+        box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
+    ">📄 產生並下載出差報告單 PDF ({export_filename})</a>
+'''
+
+st.markdown(download_html, unsafe_allow_html=True)
