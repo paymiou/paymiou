@@ -5,9 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>出差旅費報告單 - 填報系統</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.52.0/build/stlite.css" />
+    <style>
+      #loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #f8f9fa;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 5px solid #e0e0e0;
+        border-top: 5px solid #1f4e78;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+      .loading-text {
+        font-size: 18px;
+        font-weight: bold;
+        color: #1f4e78;
+        margin-bottom: 8px;
+      }
+      .sub-text {
+        font-size: 14px;
+        color: #6c757d;
+        text-align: center;
+        padding: 0 20px;
+      }
+    </style>
   </head>
   <body>
+    <div id="loading-screen">
+      <div class="spinner"></div>
+      <div class="loading-text">📝 出差旅費填報系統載入中...</div>
+      <div class="sub-text">首次開啟需載入 Python 運作環境與字型，請稍候約 5~10 秒</div>
+    </div>
     <div id="root"></div>
+
     <script src="https://cdn.jsdelivr.net/npm/@stlite/mountable@0.52.0/build/stlite.js"></script>
     <script>
       stlite.mount(
@@ -22,6 +69,21 @@
         },
         document.getElementById("root")
       );
+
+      // 當 Streamlit 元素載入完成後隱藏提示畫面
+      const observer = new MutationObserver((mutations, obs) => {
+        const root = document.getElementById('root');
+        if (root && root.children.length > 0) {
+          const loadingScreen = document.getElementById('loading-screen');
+          if (loadingScreen) {
+            loadingScreen.style.opacity = '0';
+            loadingScreen.style.transition = 'opacity 0.5s ease';
+            setTimeout(() => loadingScreen.remove(), 500);
+          }
+          obs.disconnect();
+        }
+      });
+      observer.observe(document.getElementById('root'), { childList: true, subtree: true });
     </script>
   </body>
 </html>
