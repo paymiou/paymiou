@@ -509,16 +509,21 @@ if 'exp_rows' not in st.session_state:
 expenses_data = []
 for i in range(st.session_state.exp_rows):
     with st.expander(f"費用項目 #{i+1}", expanded=(i==0)):
-        e_col1, e_col2, e_col3 = st.columns(3)
-        with e_col1:
+        # 修改：月份與日期並排為一列 (1:1 比例)
+        col_em, col_ed, col_er = st.columns([1, 1, 2])
+        with col_em:
             e_m = st.text_input(f"月份 #{i+1}", value=m1, key=f"em_{i}")
+        with col_ed:
             e_d = st.text_input(f"日期 #{i+1}", value=d1, key=f"ed_{i}")
-        with e_col2:
+        with col_er:
             def_route = standard_route if i == 0 else ""
             e_route = st.text_input(f"行程 #{i+1}", value=def_route, key=f"er_{i}")
+
+        e_col1, e_col2, e_col3 = st.columns(3)
+        with e_col1:
             def_pub = str(total_transit) if (i == 0 and total_transit > 0) else ""
             e_pub = st.text_input(f"大眾交通金額 #{i+1}", value=def_pub, key=f"ep_{i}")
-        with e_col3:
+        with e_col2:
             e_desc_opts = ["雜費", "公務車", "過路費", "", "✍️ 其他 (手動自訂)"]
             def_desc_idx = 0 if i == 0 else 3
             e_desc_sel = st.selectbox(f"摘要 #{i+1}", e_desc_opts, index=def_desc_idx, key=f"edesc_sel_{i}")
@@ -526,7 +531,7 @@ for i in range(st.session_state.exp_rows):
                 e_desc = st.text_input(f"請輸入自訂摘要 #{i+1}", value="", key=f"edesc_custom_{i}")
             else:
                 e_desc = e_desc_sel
-
+        with e_col3:
             def_amt = str(total_incidental) if (i == 0 and total_incidental > 0) else ""
             e_amt = st.text_input(f"雜費金額 #{i+1}", value=def_amt, key=f"eamt_{i}")
 
@@ -553,14 +558,16 @@ if 'rep_rows' not in st.session_state:
 reports_data = []
 for i in range(st.session_state.rep_rows):
     with st.expander(f"洽辦紀錄 #{i+1}", expanded=(i==0)):
-        r_col1, r_col2 = st.columns([1, 2])
-        with r_col1:
+        # 修改：報告月份與日期並排為一列 (1:1 比例)
+        col_rm, col_rd = st.columns(2)
+        with col_rm:
             r_m = st.text_input(f"報告月份 #{i+1}", value=m1, key=f"rm_{i}")
+        with col_rd:
             r_d = st.text_input(f"報告日期 #{i+1}", value=d1, key=f"rd_{i}")
-        with r_col2:
-            r_target = st.text_area(f"接洽人員 (可換行輸入多個單位)", height=3, key=f"rt_{i}")
-            def_detail = detail_str if i == 0 else ""
-            r_detail = st.text_input(f"洽辦事項說明 #{i+1}", value=def_detail, key=f"rdet_{i}")
+
+        r_target = st.text_area(f"接洽人員 (可換行輸入多個單位)", height=3, key=f"rt_{i}")
+        def_detail = detail_str if i == 0 else ""
+        r_detail = st.text_input(f"洽辦事項說明 #{i+1}", value=def_detail, key=f"rdet_{i}")
 
         reports_data.append({
             'm': r_m, 'd': r_d, 'target': r_target, 'detail': r_detail
@@ -591,8 +598,6 @@ form_data = {
 }
 
 pdf_bytes = generate_pdf_bytes(form_data, current_font)
-
-# 檔名以出差起日為開頭 (範例：20260809_出差報告單.pdf)
 export_filename = f"{start_date.strftime('%Y%m%d')}_出差報告單.pdf"
 
 st.download_button(
