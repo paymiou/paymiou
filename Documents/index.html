@@ -12,20 +12,61 @@
     .container { max-width: 800px; margin: 0 auto; background: #fff; padding: 16px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
     h2 { text-align: center; color: #1f4e78; margin-top: 0; font-size: 22px; }
     .section-title { font-size: 16px; font-weight: bold; color: #1f4e78; border-bottom: 2px solid #1f4e78; padding-bottom: 4px; margin-top: 18px; margin-bottom: 12px; }
-    .row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
-    .col { flex: 1; min-width: 140px; }
-    label { font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px; color: #495057; }
-    input, select, textarea { width: 100%; padding: 8px 10px; font-size: 14px; border: 1px solid #ced4da; border-radius: 6px; background-color: #fff; }
+    
+    .row { display: flex; flex-wrap: nowrap; gap: 10px; margin-bottom: 10px; }
+    .col { flex: 1 1 0px; min-width: 0; }
+    
+    label { font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px; color: #495057; white-space: nowrap; }
+    
+    /* 統一所有輸入框樣式與高度，解決手機版 Date 寬度不一致問題 */
+    input, select, textarea { 
+      width: 100%; 
+      padding: 8px 10px; 
+      font-size: 14px; 
+      border: 1px solid #ced4da; 
+      border-radius: 6px; 
+      background-color: #fff; 
+      box-sizing: border-box;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+    input[type="date"] {
+      min-height: 38px;
+      line-height: 1.2;
+    }
     input:focus, select:focus, textarea:focus { border-color: #1f4e78; outline: none; }
-    .radio-group { display: flex; gap: 15px; align-items: center; padding: 6px 0; }
-    .radio-group label { display: flex; align-items: center; gap: 4px; font-size: 15px; cursor: pointer; }
+    
+    .radio-group { 
+      display: flex; 
+      flex-direction: row; 
+      flex-wrap: nowrap; 
+      gap: 24px; 
+      align-items: center; 
+      padding: 6px 0; 
+      overflow-x: auto;
+    }
+    .radio-group label { 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 6px; 
+      font-size: 16px; 
+      font-weight: bold; 
+      cursor: pointer; 
+      white-space: nowrap; 
+    }
+    .radio-group input[type="radio"] {
+      width: auto;
+      margin: 0;
+      cursor: pointer;
+    }
+
     .info-box { background-color: #e8f4f8; border-left: 4px solid #1f4e78; padding: 10px; border-radius: 4px; font-size: 13px; margin: 10px 0; line-height: 1.5; }
     .card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 10px; margin-bottom: 10px; position: relative; }
     .btn-delete { position: absolute; top: 8px; right: 8px; background: #dc3545; color: #fff; border: none; border-radius: 4px; padding: 2px 8px; font-size: 12px; cursor: pointer; }
     .btn-add { background: #6c757d; color: #fff; border: none; padding: 8px 14px; border-radius: 6px; font-size: 13px; cursor: pointer; margin-top: 4px; }
     .btn-submit { display: block; width: 100%; background: #1f4e78; color: #fff; border: none; padding: 14px; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 8px rgba(31,78,120,0.3); text-align: center; text-decoration: none; }
     
-    /* 螢幕外渲染 PDF 模板 (解決 PDF 空白問題) */
+    /* 螢幕外渲染 PDF 模板 */
     #pdf-template { position: absolute; left: -9999px; top: 0; width: 750px; }
     .pdf-page { width: 750px; padding: 20px; font-family: "Microsoft JhengHei", "標楷體", sans-serif; background: #fff; color: #000; }
     .pdf-header { display: flex; justify-content: space-between; font-size: 9.5pt; line-height: 1.2; margin-bottom: 5px; }
@@ -123,7 +164,7 @@
       <input type="number" id="numPeople" value="1" min="1" max="10" onchange="updateCalculation()">
     </div>
     <div class="col" style="display:flex; align-items:flex-end;">
-      <label style="cursor:pointer;"><input type="checkbox" id="calcIncidental" checked onchange="updateCalculation()"> 計算每人 400 元雜費</label>
+      <label style="cursor:pointer;"><input type="checkbox" id="calcIncidental" checked onchange="updateCalculation()" style="width:auto;"> 計算每人 400 元雜費</label>
     </div>
   </div>
 
@@ -139,7 +180,7 @@
   <button class="btn-submit" onclick="generatePDF()">📄 產生並下載出差報告單 PDF</button>
 </div>
 
-<!-- PDF 輸出模板 (放置於螢幕外) -->
+<!-- PDF 輸出模板 -->
 <div id="pdf-template">
   <div class="pdf-page" id="pdf-content">
     <div class="pdf-header">
@@ -296,7 +337,6 @@ function onModeChange() {
   updateCalculation();
 }
 
-// 起始日期連動（同步更新迄日與下方所有費用的月份/日期）
 function onStartDateChange() {
   document.getElementById('endDate').value = document.getElementById('startDate').value;
   updateDays();
@@ -310,7 +350,6 @@ function syncAllRowDates() {
   const m = (sDate.getMonth() + 1).toString();
   const d = sDate.getDate().toString();
 
-  // 同步所有費用列
   const expCards = document.querySelectorAll('#expensesContainer .card');
   expCards.forEach(card => {
     const id = card.id.replace('exp_card_', '');
@@ -320,7 +359,6 @@ function syncAllRowDates() {
     if (dEl) dEl.value = d;
   });
 
-  // 同步所有報告列
   const repCards = document.querySelectorAll('#reportsContainer .card');
   repCards.forEach(card => {
     const id = card.id.replace('rep_card_', '');
