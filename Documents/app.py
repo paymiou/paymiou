@@ -129,7 +129,7 @@ def number_to_chinese_capital(num):
     return result.rstrip("零")
 
 # ----------------------------------------------------------------------
-# 生成 PDF 核心邏輯
+# 生成 PDF 核心邏輯 (姓名欄位加寬至 260pt)
 # ----------------------------------------------------------------------
 def generate_pdf_bytes(form_data, font_name):
     buffer = io.BytesIO()
@@ -181,13 +181,13 @@ def generate_pdf_bytes(form_data, font_name):
     story.append(p("國內外出差旅費報告單", subtitle_style))
     story.append(Spacer(1, 4))
 
-    col_w = [25, 25, 110, 45, 30, 30, 30, 30, 65, 45, 50, 70]
+    col_w = [22, 22, 125, 45, 30, 30, 30, 30, 60, 40, 45, 66]
     data = []
 
     # Row 0: 基本資料 1
     data.append([
-        p("姓 名"), "", p(form_data.get('name', ''), c_left), "", "", "",
-        p("單位代號名稱及職稱", c_style_10), "", "", p(form_data.get('dept', ''), c_left), "", ""
+        p("姓 名"), "", p(form_data.get('name', ''), c_left), "", "", "", "",
+        p("單位代號名稱及職稱", c_style_10), "", p(form_data.get('dept', ''), c_left), "", ""
     ])
 
     # Row 1: 基本資料 2
@@ -305,8 +305,11 @@ def generate_pdf_bytes(form_data, font_name):
         ('LEFTPADDING', (0, 0), (-1, -1), 2),
         ('RIGHTPADDING', (0, 0), (-1, -1), 2),
 
-        ('SPAN', (0, 0), (1, 0)), ('SPAN', (2, 0), (5, 0)),
-        ('SPAN', (6, 0), (8, 0)), ('SPAN', (9, 0), (11, 0)),
+        # Row 0：姓名欄位加寬，涵蓋 cols 2~6 (寬度大幅增加至 260pt)
+        ('SPAN', (0, 0), (1, 0)), ('SPAN', (2, 0), (6, 0)),
+        ('SPAN', (7, 0), (8, 0)), ('SPAN', (9, 0), (11, 0)),
+
+        # Row 1：出差事由與城市
         ('SPAN', (0, 1), (1, 1)), ('SPAN', (2, 1), (5, 1)),
         ('SPAN', (6, 1), (8, 1)), ('SPAN', (9, 1), (11, 1)),
 
@@ -429,7 +432,8 @@ with col1:
         reason = selected_reason
 
 with col2:
-    dept_opts = [config["dept"], "中慈_台中推廣課632011", "中慈_綠保632013", "中慈_種樹632014", "✍️ 其他 (手動自訂)"]
+    # 單位及職稱：僅保留對應專案預設單位，移除其他中慈單位
+    dept_opts = [config["dept"], "✍️ 其他 (手動自訂)"]
     selected_dept = st.selectbox("單位及職稱 (參考選單)", dept_opts, index=0)
     if selected_dept == "✍️ 其他 (手動自訂)":
         dept = st.text_input("請輸入自訂單位及職稱", value="")
@@ -604,7 +608,6 @@ form_data = {
 pdf_bytes = generate_pdf_bytes(form_data, current_font)
 export_filename = f"{start_date.strftime('%Y%m%d')}_出差報告單.pdf"
 
-# 改用 Base64 HTML 連結下載，解決檔名 Hash 亂碼問題
 b64_pdf = base64.b64encode(pdf_bytes).decode('utf-8')
 download_html = f'''
     <a href="data:application/pdf;base64,{b64_pdf}" download="{export_filename}" target="_blank" style="
