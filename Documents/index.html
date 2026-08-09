@@ -60,7 +60,7 @@
     .spinner { width: 45px; height: 45px; border: 5px solid #e0e0e0; border-top: 5px solid #1f4e78; border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-    /* PDF 模板 (全螢幕固定定位，避免手機捲動與頂部空白) */
+    /* PDF 模板 */
     #pdf-template { 
       display: none; 
       position: fixed; 
@@ -72,7 +72,6 @@
       z-index: 99990; 
       overflow: auto;
     }
-    /* 調整寬度為 680px，確保 100% 完美放入 A4 頁面 */
     .pdf-page { 
       width: 680px; 
       padding: 15px; 
@@ -498,14 +497,13 @@ function addExpenseRow(isFirst = false) {
     ${!isFirst ? `<button class="btn-delete" onclick="removeCard('exp_card_${id}')">✕ 刪除</button>` : ''}
     <div style="font-weight:bold; font-size:13px; margin-bottom:6px;">費用項目 #${id}</div>
     <div class="row">
-      <div class="col"><label>月份</label><input type="text" id="exp_m_${id}" value="${sDate.m}" style="text-align:center;"></div>
-      <div class="col"><label>日期</label><input type="text" id="exp_d_${id}" value="${sDate.d}" style="text-align:center;"></div>
-      <div class="col" style="flex:2;"><label>行程</label><input type="text" id="exp_route_${id}"></div>
+      <div style="flex: 0 0 55px;"><label>月份</label><input type="text" id="exp_m_${id}" value="${sDate.m}" style="text-align:center; padding:8px 2px;"></div>
+      <div style="flex: 0 0 55px;"><label>日期</label><input type="text" id="exp_d_${id}" value="${sDate.d}" style="text-align:center; padding:8px 2px;"></div>
+      <div style="flex: 1; min-width: 0;"><label>行程</label><input type="text" id="exp_route_${id}"></div>
+      <div style="flex: 0 0 120px;"><label>大眾交通金額</label><input type="number" id="exp_pub_${id}" oninput="updateCalculation()"></div>
     </div>
-    <div class="row">
-      <div class="col"><label>大眾交通金額</label><input type="number" id="exp_pub_${id}" oninput="updateCalculation()"></div>
-      <div class="col">
-        <label>摘要</label>
+    <div class="row" style="justify-content: flex-start;">
+      <div style="flex: 0 0 120px;"><label>摘要</label>
         <select id="exp_desc_${id}">
           <option value="雜費" ${isFirst ? 'selected' : ''}>雜費</option>
           <option value="公務車">公務車</option>
@@ -513,7 +511,7 @@ function addExpenseRow(isFirst = false) {
           <option value="" ${!isFirst ? 'selected' : ''}>空白</option>
         </select>
       </div>
-      <div class="col"><label>雜費金額</label><input type="number" id="exp_amt_${id}" oninput="updateCalculation()"></div>
+      <div style="flex: 0 0 120px;"><label>金額</label><input type="number" id="exp_amt_${id}" oninput="updateCalculation()"></div>
     </div>
   `;
   container.appendChild(card);
@@ -534,14 +532,12 @@ function addReportRow(isFirst = false) {
     ${!isFirst ? `<button class="btn-delete" onclick="removeCard('rep_card_${id}')">✕ 刪除</button>` : ''}
     <div style="font-weight:bold; font-size:13px; margin-bottom:6px;">洽辦紀錄 #${id}</div>
     <div class="row">
-      <div class="col"><label>月份</label><input type="text" id="rep_m_${id}" value="${sDate.m}" style="text-align:center;"></div>
-      <div class="col"><label>日期</label><input type="text" id="rep_d_${id}" value="${sDate.d}" style="text-align:center;"></div>
+      <div style="flex: 0 0 55px;"><label>月份</label><input type="text" id="rep_m_${id}" value="${sDate.m}" style="text-align:center; padding:8px 2px;"></div>
+      <div style="flex: 0 0 55px;"><label>日期</label><input type="text" id="rep_d_${id}" value="${sDate.d}" style="text-align:center; padding:8px 2px;"></div>
+      <div style="flex: 1; min-width: 0;"><label>洽辦事項說明</label><input type="text" id="rep_detail_${id}"></div>
     </div>
     <div class="row">
       <div class="col"><label>接洽人員 (可換行)</label><textarea id="rep_target_${id}" rows="2"></textarea></div>
-    </div>
-    <div class="row">
-      <div class="col"><label>洽辦事項說明</label><input type="text" id="rep_detail_${id}"></div>
     </div>
   `;
   container.appendChild(card);
