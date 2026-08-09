@@ -39,18 +39,25 @@ PROJECT_CONFIG = {
 }
 
 # ----------------------------------------------------------------------
-# 自動下載與註冊中文字型
+# 自動下載與註冊中文字型 (已加速快取)
 # ----------------------------------------------------------------------
-@st.cache_resource
+@st.cache_resource(show_spinner=False)
 def init_chinese_font():
     font_name = 'CustomChineseFont'
     font_filename = 'NotoSansTC-Regular.ttf'
     
+    # 若本機或快取已存在字型，直接註冊
+    if os.path.exists(font_filename):
+        try:
+            pdfmetrics.registerFont(TTFont(font_name, font_filename))
+            return font_name
+        except Exception:
+            pass
+
     possible_paths = [
         r'C:\Windows\Fonts\msjh.ttc',
         r'C:\Windows\Fonts\kaiu.ttf',
-        r'C:\Windows\Fonts\msjh.ttf',
-        font_filename
+        r'C:\Windows\Fonts\msjh.ttf'
     ]
     
     for path in possible_paths:
@@ -64,17 +71,17 @@ def init_chinese_font():
     url = "https://cdn.jsdelivr.net/npm/@electron-fonts/noto-sans-tc@1.2.0/fonts/NotoSansTC-Regular.ttf"
     
     try:
-        urllib.request.urlretrieve(url, font_filename)
+        import pyodide.http
+        content = pyodide.http.open_url(url).read()
+        with open(font_filename, "wb") as f:
+            f.write(content)
         pdfmetrics.registerFont(TTFont(font_name, font_filename))
         return font_name
     except Exception:
         pass
 
     try:
-        import pyodide.http
-        content = pyodide.http.open_url(url).read()
-        with open(font_filename, "wb") as f:
-            f.write(content)
+        urllib.request.urlretrieve(url, font_filename)
         pdfmetrics.registerFont(TTFont(font_name, font_filename))
         return font_name
     except Exception:
@@ -398,8 +405,7 @@ def generate_pdf_bytes(form_data, font_name):
 # ----------------------------------------------------------------------
 st.set_page_config(page_title="出差旅費填報系統", page_icon="📝", layout="centered")
 
-with st.spinner("系統字型初始化中，請稍候..."):
-    current_font = init_chinese_font()
+current_font = init_chinese_font()
 
 st.title("📝 出差旅費報告單 - 填報系統")
 
