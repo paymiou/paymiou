@@ -64,7 +64,7 @@
     .spinner { width: 45px; height: 45px; border: 5px solid #e0e0e0; border-top: 5px solid #1f4e78; border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-    /* PDF 模板：整體寬度由 680px 擴大至 720px，並保持頂部齊平 */
+    /* PDF 模板 */
     #pdf-template { 
       display: none; 
       position: fixed; 
@@ -89,15 +89,13 @@
     .pdf-title { text-align: center; font-size: 15pt; font-weight: bold; margin: 4px 0 2px 0; }
     .pdf-subtitle { text-align: center; font-size: 12pt; margin-bottom: 6px; }
     .pdf-table { width: 100%; border-collapse: collapse; margin-top: 4px; table-layout: fixed; }
-    .pdf-table td, .pdf-table th { border: 1px solid #000; padding: 3px 1px; text-align: center; font-size: 10.5pt; vertical-align: middle; word-break: break-all; }
+    .pdf-table td, .pdf-table th { border: 1px solid #000; padding: 2px 1px; text-align: center; font-size: 10pt; vertical-align: middle; word-break: break-all; }
     .pdf-table .text-left { text-align: left; padding-left: 4px; }
-    .pdf-table .font-10 { font-size: 9.5pt; line-height: 1.1; }
-    .pdf-table .font-95 { font-size: 9pt; line-height: 1.1; text-align: left; padding-left: 4px; }
+    .pdf-table .font-10 { font-size: 9pt; line-height: 1.1; }
+    .pdf-table .font-95 { font-size: 8.5pt; line-height: 1.1; text-align: left; padding-left: 4px; }
     
-    /* 行程欄位：寬度足夠，字體設定清晰，絕不換行不重疊 */
+    /* 行程欄位：極寬空間，字體完整呈現 */
     .pdf-table td.exp-route {
-      width: 150px;       /* 新增：設定欄位寬度（可依需求調整數值或單位，如 px、%、em） */
-  min-width: 150px;   /* 新增：設定最小寬度，防止表格被擠壓變窄 */
       text-align: left;
       padding-left: 5px;
       font-size: 9.5pt;
@@ -244,42 +242,56 @@
     <div class="pdf-subtitle">國內外出差旅費報告單</div>
 
     <table class="pdf-table">
+      <!-- 定義精準欄寬比例 (總寬 680px) -->
+      <colgroup>
+        <col style="width: 18px;" /> <!-- 月 -->
+        <col style="width: 18px;" /> <!-- 日 -->
+        <col style="width: 336px;" /> <!-- 行程 (大幅加寬) -->
+        <col style="width: 50px;" /> <!-- 大眾交通工具 -->
+        <col style="width: 26px;" /> <!-- 飛機 (縮窄) -->
+        <col style="width: 28px;" /> <!-- 計程車 (縮窄) -->
+        <col style="width: 28px;" /> <!-- 膳費 (縮窄) -->
+        <col style="width: 28px;" /> <!-- 宿費 (縮窄) -->
+        <col style="width: 28px;" /> <!-- 摘要 (縮窄) -->
+        <col style="width: 32px;" /> <!-- 金額 (縮窄) -->
+        <col style="width: 38px;" /> <!-- 私車油資補貼 (縮窄) -->
+        <col style="width: 50px;" /> <!-- 合計 -->
+      </colgroup>
+      
       <tr style="height:42px;">
-        <td style="width:40px;">姓 名</td>
-        <td colspan="5" class="text-left" id="p-name" style="width:230px;"></td>
-        <td colspan="2" class="font-10" style="width:105px;">單位代號名稱及職稱</td>
+        <td style="width:36px;" colspan="2">姓 名</td>
+        <td colspan="4" class="text-left" id="p-name"></td>
+        <td colspan="2" class="font-10">單位代號名稱及職稱</td>
         <td colspan="4" class="text-left" id="p-dept"></td>
       </tr>
       <tr style="height:28px;">
-        <td class="font-10">出差事由</td>
-        <td colspan="5" class="text-left font-10" id="p-reason"></td>
+        <td colspan="2" class="font-10">出差事由</td>
+        <td colspan="4" class="text-left font-10" id="p-reason"></td>
         <td colspan="2" class="font-10">出差國家及城市</td>
         <td colspan="4" class="text-left" id="p-city"></td>
       </tr>
       <tr style="height:28px;">
-        <td class="font-10">出差時間</td>
-        <td colspan="11" class="text-left font-10" id="p-time"></td>
+        <td colspan="2" class="font-10">出差時間</td>
+        <td colspan="10" class="text-left font-10" id="p-time"></td>
       </tr>
       <tr style="height:24px;">
-        <!-- 月日欄位縮小 (20px + 20px = 40px) -->
-        <td id="p-year" colspan="2" style="width:40px;"></td>
-        <!-- 行程欄位加寬至 260px，給予極寬裕的空間 -->
-        <td rowspan="2" style="width:260px;">行 程</td>
+        <td id="p-year" colspan="2"></td>
+        <td rowspan="2">行 程</td>
         <td colspan="3">交 通 費</td>
-        <td rowspan="2" style="width:36px;">膳 費</td>
-        <td rowspan="2" style="width:36px;">宿 費</td>
+        <td rowspan="2" style="font-size:8.5pt;">膳 費</td>
+        <td rowspan="2" style="font-size:8.5pt;">宿 費</td>
         <td colspan="2">其 他 費 用</td>
-        <td rowspan="2" class="font-10" style="width:45px;">私車油資<br/>補貼</td>
-        <td rowspan="2" style="width:50px;">合 計</td>
+        <td rowspan="2" style="font-size:8pt; line-height:1.0;">私車油資<br/>補貼</td>
+        <td rowspan="2">合 計</td>
       </tr>
       <tr style="height:24px;">
-        <td style="width:20px;">月</td>
-        <td style="width:20px;">日</td>
-        <td class="font-10" style="width:55px;">大眾交通工具</td>
-        <td class="font-10" style="width:32px;">飛機</td>
-        <td class="font-10" style="width:36px;">計程車</td>
-        <td class="font-10" style="width:40px;">摘 要</td>
-        <td class="font-10" style="width:40px;">金 額</td>
+        <td>月</td>
+        <td>日</td>
+        <td style="font-size:8pt; line-height:1.0;">大眾交通工具</td>
+        <td style="font-size:8.5pt;">飛機</td>
+        <td style="font-size:8pt;">計程車</td>
+        <td style="font-size:8.5pt;">摘 要</td>
+        <td style="font-size:8.5pt;">金 額</td>
       </tr>
       <tbody id="pdf-expenses-rows"></tbody>
       <tr style="height:28px;">
@@ -319,7 +331,7 @@
     <div class="notes-box">
       備註：<br/>
       1. 依稅法規定，出差報告請逐日填寫，並附相關業務報告<br/>
-      2. 若有出差前已核準簽呈請註明簽呈代號於出差事由欄位中。<br/>
+      2. 若有出差前已核准簽呈請註明簽呈代號於出差事由欄位中。<br/>
       3. 若為國外差旅申請請註明外幣、換算後台幣及匯率。設算匯率以出國當日台灣銀行兌匯匯率計之，並說明計算式。<br/>
       4. 交通費請附相關票根、登機證、旅行社代收轉付收據等憑證。過路費屬其他費用，需附記錄證明。<br/>
       5. 膳費及宿費請附發票或收據。
