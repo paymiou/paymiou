@@ -105,7 +105,6 @@
 
     .approval-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
     .approval-table td { border: none; padding: 3px; text-align: left; font-size: 10.5pt; }
-    /* 備註與下方 5 點條文縮小字體 */
     .notes-box { font-size: 7.5pt; line-height: 1.25; margin-top: 6px; color: #222; }
   </style>
 </head>
@@ -177,16 +176,16 @@
     <div class="row">
       <div class="col" style="flex: 2;">
         <label>出差起始日</label>
-        <div style="position: relative; width: 100%;">
-          <input type="text" id="startDateText" readonly style="background-color: #fff; cursor: pointer; text-align: center;">
-          <input type="date" id="startDate" onchange="onStartDateChange()" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
+        <div style="position: relative; width: 100%; cursor: pointer;" onclick="triggerDatePicker('startDate')">
+          <input type="text" id="startDateText" readonly style="background-color: #fff; cursor: pointer; text-align: center; pointer-events: none;">
+          <input type="date" id="startDate" onchange="onStartDateChange()" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; pointer-events: none;">
         </div>
       </div>
       <div class="col" style="flex: 2;">
         <label>出差截止日</label>
-        <div style="position: relative; width: 100%;">
-          <input type="text" id="endDateText" readonly style="background-color: #fff; cursor: pointer; text-align: center;">
-          <input type="date" id="endDate" onchange="onEndDateChange()" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
+        <div style="position: relative; width: 100%; cursor: pointer;" onclick="triggerDatePicker('endDate')">
+          <input type="text" id="endDateText" readonly style="background-color: #fff; cursor: pointer; text-align: center; pointer-events: none;">
+          <input type="date" id="endDate" onchange="onEndDateChange()" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; pointer-events: none;">
         </div>
       </div>
       <div style="flex: 0 0 85px;">
@@ -345,7 +344,6 @@
 </div>
 
 <script>
-// 更新茶博專案預設單位為「有機茶計畫 620039」
 const PROJECT_CONFIG = {
   "茶博專案": {
     dept: "有機茶計畫 620039",
@@ -374,6 +372,17 @@ const PROJECT_CONFIG = {
 let expenseCount = 0;
 let reportCount = 0;
 
+function triggerDatePicker(id) {
+  const dateInput = document.getElementById(id);
+  if (dateInput) {
+    if (typeof dateInput.showPicker === 'function') {
+      dateInput.showPicker();
+    } else {
+      dateInput.click();
+    }
+  }
+}
+
 function getParsedDate(dateString) {
   if(!dateString) return { y: "", m: "", d: "" };
   const parts = dateString.split('-');
@@ -383,7 +392,6 @@ function getParsedDate(dateString) {
   return { y: "", m: "", d: "" };
 }
 
-// 格式化介面顯示的日期為「M月D日」
 function updateDateTextDisplay(dateId, textId) {
   const val = document.getElementById(dateId).value;
   const parsed = getParsedDate(val);
@@ -551,11 +559,11 @@ function addExpenseRow(isFirst = false) {
     ${!isFirst ? `<button class="btn-delete" onclick="removeCard('exp_card_${id}')">✕ 刪除</button>` : ''}
     <div style="font-weight:bold; font-size:13px; margin-bottom:6px;">費用項目 #${id}</div>
     <div class="row">
-      <div style="flex: 0 0 48px;"><label>月份</label><input type="text" id="exp_m_${id}" value="${sDate.m}" style="text-align:center; padding:8px 2px;"></div>
-      <div style="flex: 0 0 48px;"><label>日期</label><input type="text" id="exp_d_${id}" value="${sDate.d}" style="text-align:center; padding:8px 2px;"></div>
+      <div style="flex: 0 0 40px;"><label>月份</label><input type="text" id="exp_m_${id}" value="${sDate.m}" style="text-align:center; padding:8px 0px;"></div>
+      <div style="flex: 0 0 40px;"><label>日期</label><input type="text" id="exp_d_${id}" value="${sDate.d}" style="text-align:center; padding:8px 0px;"></div>
       <div style="flex: 1; min-width: 0;"><label>行程</label><input type="text" id="exp_route_${id}"></div>
-      <div style="flex: 0 0 110px;"><label>大眾交通金額</label><input type="number" id="exp_pub_${id}" oninput="updateCalculation()"></div>
-      <div style="flex: 0 0 90px;"><label>摘要</label>
+      <div style="flex: 0 0 85px;"><label style="font-size: 11px;">大眾交通金額</label><input type="number" id="exp_pub_${id}" oninput="updateCalculation()"></div>
+      <div style="flex: 0 0 75px;"><label>摘要</label>
         <select id="exp_desc_${id}">
           <option value="雜費" ${isFirst ? 'selected' : ''}>雜費</option>
           <option value="公務車">公務車</option>
@@ -563,7 +571,7 @@ function addExpenseRow(isFirst = false) {
           <option value="" ${!isFirst ? 'selected' : ''}>空白</option>
         </select>
       </div>
-      <div style="flex: 0 0 90px;"><label>金額</label><input type="number" id="exp_amt_${id}" oninput="updateCalculation()"></div>
+      <div style="flex: 0 0 75px;"><label>金額</label><input type="number" id="exp_amt_${id}" oninput="updateCalculation()"></div>
     </div>
   `;
   container.appendChild(card);
@@ -584,8 +592,8 @@ function addReportRow(isFirst = false) {
     ${!isFirst ? `<button class="btn-delete" onclick="removeCard('rep_card_${id}')">✕ 刪除</button>` : ''}
     <div style="font-weight:bold; font-size:13px; margin-bottom:6px;">洽辦紀錄 #${id}</div>
     <div class="row">
-      <div style="flex: 0 0 48px;"><label>月份</label><input type="text" id="rep_m_${id}" value="${sDate.m}" style="text-align:center; padding:8px 2px;"></div>
-      <div style="flex: 0 0 48px;"><label>日期</label><input type="text" id="rep_d_${id}" value="${sDate.d}" style="text-align:center; padding:8px 2px;"></div>
+      <div style="flex: 0 0 40px;"><label>月份</label><input type="text" id="rep_m_${id}" value="${sDate.m}" style="text-align:center; padding:8px 0px;"></div>
+      <div style="flex: 0 0 40px;"><label>日期</label><input type="text" id="rep_d_${id}" value="${sDate.d}" style="text-align:center; padding:8px 0px;"></div>
       <div style="flex: 1; min-width: 0;"><label>洽辦事項說明</label><input type="text" id="rep_detail_${id}"></div>
     </div>
     <div class="row">
