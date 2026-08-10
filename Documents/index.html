@@ -241,32 +241,35 @@
     <div class="pdf-subtitle">國內外出差旅費報告單</div>
 
     <table class="pdf-table">
+      <!-- 依需求精確定義欄寬比例 (總寬 680px) -->
       <colgroup>
-        <col style="width: 18px;" /> <!-- 1: 月 -->
-        <col style="width: 18px;" /> <!-- 2: 日 -->
-        <col style="width: 336px;" /> <!-- 3: 行程 -->
-        <col style="width: 50px;" /> <!-- 4: 大眾交通 -->
-        <col style="width: 26px;" /> <!-- 5: 飛機 -->
-        <col style="width: 28px;" /> <!-- 6: 計程車 -->
-        <col style="width: 28px;" /> <!-- 7: 膳費 -->
-        <col style="width: 28px;" /> <!-- 8: 宿費 -->
-        <col style="width: 28px;" /> <!-- 9: 摘要 -->
-        <col style="width: 32px;" /> <!-- 10: 金額 -->
-        <col style="width: 38px;" /> <!-- 11: 私車油資 -->
-        <col style="width: 50px;" /> <!-- 12: 合計 -->
+        <col style="width: 25px;" /> <!-- 1: 月 (25px) -->
+        <col style="width: 25px;" /> <!-- 2: 日 (25px) -->
+        <col style="width: 180px;" /> <!-- 3: 行程 (180px) -->
+        <col style="width: 80px;" /> <!-- 4: 大眾交通工具 -->
+        <col style="width: 35px;" /> <!-- 5: 飛機 -->
+        <col style="width: 45px;" /> <!-- 6: 計程車 -->
+        <col style="width: 45px;" /> <!-- 7: 膳費 -->
+        <col style="width: 45px;" /> <!-- 8: 宿費 -->
+        <col style="width: 40px;" /> <!-- 9: 摘要 (40px) -->
+        <col style="width: 40px;" /> <!-- 10: 金額 (40px) -->
+        <col style="width: 55px;" /> <!-- 11: 私車油資補貼 -->
+        <col style="width: 65px;" /> <!-- 12: 合計 -->
       </colgroup>
       
       <tr style="height:42px;">
-        <td style="width:36px;" colspan="2">姓 名</td>
-        <td colspan="4" class="text-left" id="p-name"></td>
+        <td colspan="2">姓 名</td>
+        <!-- 姓名值改為 colspan="2"，將右側標題往左推兩格 -->
+        <td colspan="2" class="text-left" id="p-name"></td>
         <td colspan="2" class="font-10">單位代號名稱及職稱</td>
-        <td colspan="4" class="text-left" id="p-dept"></td>
+        <td colspan="6" class="text-left" id="p-dept"></td>
       </tr>
       <tr style="height:28px;">
         <td colspan="2" class="font-10">出差事由</td>
-        <td colspan="4" class="text-left font-10" id="p-reason"></td>
+        <!-- 事由值改為 colspan="2"，將右側標題往左推兩格 -->
+        <td colspan="2" class="text-left font-10" id="p-reason"></td>
         <td colspan="2" class="font-10">出差國家及城市</td>
-        <td colspan="4" class="text-left" id="p-city"></td>
+        <td colspan="6" class="text-left" id="p-city"></td>
       </tr>
       <tr style="height:28px;">
         <td colspan="2" class="font-10">出差時間</td>
@@ -301,9 +304,8 @@
       </tr>
       <tr style="height:24px;">
         <td id="p-year-rep" colspan="2"></td>
-        <!-- 修正：訪洽公司對齊第 3 欄 (行程欄)，洽辦說明擴展至 4~12 欄 -->
-        <td colspan="1" rowspan="2" class="font-10">訪洽公司/機構名稱及接洽人員姓名</td>
-        <td colspan="9" rowspan="2" class="font-10">洽 辦 事 項 說 明</td>
+        <td colspan="2" rowspan="2" class="font-10">訪洽公司/機構名稱及接洽人員姓名</td>
+        <td colspan="8" rowspan="2" class="font-10">洽 辦 事 項 說 明</td>
       </tr>
       <tr style="height:24px;">
         <td>月</td>
@@ -660,14 +662,13 @@ function generatePDF() {
 
     const tr = document.createElement('tr');
     tr.style.height = "42px";
-    // 修正：動態資料列同步改為 colspan="1" 與 colspan="9"，完美對齊表頭
-    tr.innerHTML = `<td>${m}</td><td>${d}</td><td colspan="1" class="font-95">${target}</td><td colspan="9" class="text-left">${detail}</td>`;
+    tr.innerHTML = `<td>${m}</td><td>${d}</td><td colspan="2" class="font-95">${target}</td><td colspan="8" class="text-left">${detail}</td>`;
     repTbody.appendChild(tr);
   });
 
   const emptyRepTr = document.createElement('tr');
   emptyRepTr.style.height = "42px";
-  emptyRepTr.innerHTML = `<td></td><td></td><td colspan="1"></td><td colspan="9"></td>`;
+  emptyRepTr.innerHTML = `<td></td><td></td><td colspan="2"></td><td colspan="8"></td>`;
   repTbody.appendChild(emptyRepTr);
 
   const payMethod = getSelectedVal('paySelect', 'payCustom');
