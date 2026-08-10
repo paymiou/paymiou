@@ -105,7 +105,8 @@
 
     .approval-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
     .approval-table td { border: none; padding: 3px; text-align: left; font-size: 10.5pt; }
-    .notes-box { font-size: 8.5pt; line-height: 1.3; margin-top: 6px; }
+    /* 備註與下方 5 點條文縮小字體 */
+    .notes-box { font-size: 7.5pt; line-height: 1.25; margin-top: 6px; color: #222; }
   </style>
 </head>
 <body>
@@ -175,12 +176,18 @@
     <div class="section-title">📅 出差時間與單據</div>
     <div class="row">
       <div class="col" style="flex: 2;">
-        <label>出差起始日期 (起)</label>
-        <input type="date" id="startDate" onchange="onStartDateChange()">
+        <label>出差起始日</label>
+        <div style="position: relative; width: 100%;">
+          <input type="text" id="startDateText" readonly style="background-color: #fff; cursor: pointer; text-align: center;">
+          <input type="date" id="startDate" onchange="onStartDateChange()" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
+        </div>
       </div>
       <div class="col" style="flex: 2;">
-        <label>出差截止日期 (迄)</label>
-        <input type="date" id="endDate" onchange="updateDays()">
+        <label>出差截止日</label>
+        <div style="position: relative; width: 100%;">
+          <input type="text" id="endDateText" readonly style="background-color: #fff; cursor: pointer; text-align: center;">
+          <input type="date" id="endDate" onchange="onEndDateChange()" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;">
+        </div>
       </div>
       <div style="flex: 0 0 85px;">
         <label>共計天數</label>
@@ -241,32 +248,29 @@
     <div class="pdf-subtitle">國內外出差旅費報告單</div>
 
     <table class="pdf-table">
-      <!-- 依需求精確定義欄寬比例 (總寬 680px) -->
       <colgroup>
-        <col style="width: 25px;" /> <!-- 1: 月 (25px) -->
-        <col style="width: 25px;" /> <!-- 2: 日 (25px) -->
-        <col style="width: 180px;" /> <!-- 3: 行程 (180px) -->
-        <col style="width: 80px;" /> <!-- 4: 大眾交通工具 -->
-        <col style="width: 35px;" /> <!-- 5: 飛機 -->
-        <col style="width: 45px;" /> <!-- 6: 計程車 -->
-        <col style="width: 45px;" /> <!-- 7: 膳費 -->
-        <col style="width: 45px;" /> <!-- 8: 宿費 -->
-        <col style="width: 40px;" /> <!-- 9: 摘要 (40px) -->
-        <col style="width: 40px;" /> <!-- 10: 金額 (40px) -->
-        <col style="width: 55px;" /> <!-- 11: 私車油資補貼 -->
-        <col style="width: 65px;" /> <!-- 12: 合計 -->
+        <col style="width: 25px;" />
+        <col style="width: 25px;" />
+        <col style="width: 180px;" />
+        <col style="width: 80px;" />
+        <col style="width: 35px;" />
+        <col style="width: 45px;" />
+        <col style="width: 45px;" />
+        <col style="width: 45px;" />
+        <col style="width: 40px;" />
+        <col style="width: 40px;" />
+        <col style="width: 55px;" />
+        <col style="width: 65px;" />
       </colgroup>
       
       <tr style="height:42px;">
         <td colspan="2">姓 名</td>
-        <!-- 姓名值改為 colspan="2"，將右側標題往左推兩格 -->
         <td colspan="2" class="text-left" id="p-name"></td>
         <td colspan="2" class="font-10">單位代號名稱及職稱</td>
         <td colspan="6" class="text-left" id="p-dept"></td>
       </tr>
       <tr style="height:28px;">
         <td colspan="2" class="font-10">出差事由</td>
-        <!-- 事由值改為 colspan="2"，將右側標題往左推兩格 -->
         <td colspan="2" class="text-left font-10" id="p-reason"></td>
         <td colspan="2" class="font-10">出差國家及城市</td>
         <td colspan="6" class="text-left" id="p-city"></td>
@@ -341,9 +345,10 @@
 </div>
 
 <script>
+// 更新茶博專案預設單位為「有機茶計畫 620039」
 const PROJECT_CONFIG = {
   "茶博專案": {
-    dept: "茶博 610055",
+    dept: "有機茶計畫 620039",
     default_city: "南投草屯",
     default_reason: "茶農拜訪",
     cities: ["南投草屯", "南投", "南投名間", "南投竹山"],
@@ -378,6 +383,17 @@ function getParsedDate(dateString) {
   return { y: "", m: "", d: "" };
 }
 
+// 格式化介面顯示的日期為「M月D日」
+function updateDateTextDisplay(dateId, textId) {
+  const val = document.getElementById(dateId).value;
+  const parsed = getParsedDate(val);
+  if (parsed.m && parsed.d) {
+    document.getElementById(textId).value = `${parsed.m}月${parsed.d}日`;
+  } else {
+    document.getElementById(textId).value = "";
+  }
+}
+
 window.onload = function() {
   const now = new Date();
   const offset = now.getTimezoneOffset() * 60000;
@@ -385,6 +401,10 @@ window.onload = function() {
   
   document.getElementById('startDate').value = localISOTime;
   document.getElementById('endDate').value = localISOTime;
+  
+  updateDateTextDisplay('startDate', 'startDateText');
+  updateDateTextDisplay('endDate', 'endDateText');
+
   onModeChange();
   addExpenseRow(true);
   addReportRow(true);
@@ -414,8 +434,15 @@ function onModeChange() {
 
 function onStartDateChange() {
   document.getElementById('endDate').value = document.getElementById('startDate').value;
+  updateDateTextDisplay('startDate', 'startDateText');
+  updateDateTextDisplay('endDate', 'endDateText');
   updateDays();
   syncAllRowDates();
+}
+
+function onEndDateChange() {
+  updateDateTextDisplay('endDate', 'endDateText');
+  updateDays();
 }
 
 function syncAllRowDates() {
@@ -442,6 +469,10 @@ function syncAllRowDates() {
 function updateDays() {
   const sVal = document.getElementById('startDate').value;
   const eVal = document.getElementById('endDate').value;
+  
+  updateDateTextDisplay('startDate', 'startDateText');
+  updateDateTextDisplay('endDate', 'endDateText');
+
   if(!sVal || !eVal) return;
   
   const s = new Date(sVal.replace(/-/g, '/'));
