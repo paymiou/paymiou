@@ -176,16 +176,17 @@
     <div class="row">
       <div class="col" style="flex: 2;">
         <label>出差起始日</label>
-        <div style="position: relative; width: 100%; cursor: pointer;" onclick="triggerDatePicker('startDate')">
-          <input type="text" id="startDateText" readonly style="background-color: #fff; cursor: pointer; text-align: center; pointer-events: none;">
-          <input type="date" id="startDate" onchange="onStartDateChange()" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; pointer-events: none;">
+        <!-- 使用原生 input[type="date"] 直接鋪滿覆蓋，支援所有手機/電腦原生點擊 -->
+        <div style="position: relative; width: 100%;">
+          <input type="text" id="startDateText" readonly placeholder="請選擇日期" style="background-color: #fff; cursor: pointer; text-align: center;">
+          <input type="date" id="startDate" onchange="onStartDateChange()" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; z-index: 10; cursor: pointer;">
         </div>
       </div>
       <div class="col" style="flex: 2;">
         <label>出差截止日</label>
-        <div style="position: relative; width: 100%; cursor: pointer;" onclick="triggerDatePicker('endDate')">
-          <input type="text" id="endDateText" readonly style="background-color: #fff; cursor: pointer; text-align: center; pointer-events: none;">
-          <input type="date" id="endDate" onchange="onEndDateChange()" style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer; pointer-events: none;">
+        <div style="position: relative; width: 100%;">
+          <input type="text" id="endDateText" readonly placeholder="請選擇日期" style="background-color: #fff; cursor: pointer; text-align: center;">
+          <input type="date" id="endDate" onchange="onEndDateChange()" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; z-index: 10; cursor: pointer;">
         </div>
       </div>
       <div style="flex: 0 0 85px;">
@@ -371,17 +372,6 @@ const PROJECT_CONFIG = {
 
 let expenseCount = 0;
 let reportCount = 0;
-
-function triggerDatePicker(id) {
-  const dateInput = document.getElementById(id);
-  if (dateInput) {
-    if (typeof dateInput.showPicker === 'function') {
-      dateInput.showPicker();
-    } else {
-      dateInput.click();
-    }
-  }
-}
 
 function getParsedDate(dateString) {
   if(!dateString) return { y: "", m: "", d: "" };
