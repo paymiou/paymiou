@@ -176,17 +176,17 @@
     <div class="row">
       <div class="col" style="flex: 2;">
         <label>出差起始日</label>
-        <!-- 使用原生 input[type="date"] 直接鋪滿覆蓋，支援所有手機/電腦原生點擊 -->
         <div style="position: relative; width: 100%;">
           <input type="text" id="startDateText" readonly placeholder="請選擇日期" style="background-color: #fff; cursor: pointer; text-align: center;">
-          <input type="date" id="startDate" onchange="onStartDateChange()" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; z-index: 10; cursor: pointer;">
+          <!-- 支援全平台 (電腦/手機) 點擊喚起日曆 -->
+          <input type="date" id="startDate" onchange="onStartDateChange()" onclick="try{this.showPicker();}catch(e){}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; z-index: 10; cursor: pointer;">
         </div>
       </div>
       <div class="col" style="flex: 2;">
         <label>出差截止日</label>
         <div style="position: relative; width: 100%;">
           <input type="text" id="endDateText" readonly placeholder="請選擇日期" style="background-color: #fff; cursor: pointer; text-align: center;">
-          <input type="date" id="endDate" onchange="onEndDateChange()" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; z-index: 10; cursor: pointer;">
+          <input type="date" id="endDate" onchange="onEndDateChange()" onclick="try{this.showPicker();}catch(e){}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; z-index: 10; cursor: pointer;">
         </div>
       </div>
       <div style="flex: 0 0 85px;">
@@ -491,6 +491,15 @@ function checkCustomInput(selectId, customInputId) {
 
 function onCityChange() {
   checkCustomInput('citySelect', 'cityCustom');
+  const mode = document.querySelector('input[name="projectMode"]:checked').value;
+  const config = PROJECT_CONFIG[mode];
+  const city = getSelectedVal('citySelect', 'cityCustom');
+  const firstExpPub = document.getElementById('exp_pub_1');
+  
+  // 若切換為自訂地點，自動清空交通費供使用者自行手動輸入
+  if (!config.fares[city] && firstExpPub) {
+    firstExpPub.value = "";
+  }
   updateCalculation();
 }
 
@@ -510,15 +519,25 @@ function updateCalculation() {
   cbLbl.className = cb.checked ? 'checkbox-label checked' : 'checkbox-label';
 
   let totalTransit = 0, detailStr = "", standardRoute = "";
+  const firstExpPub = document.getElementById('exp_pub_1');
 
   if (config.fares[city]) {
+    // 預設專案地點：自動算額
     const info = config.fares[city];
     totalTransit = info.fare * numPeople;
     detailStr = `台中到${info.name}${info.type} ${info.fare}元(來回)x${numPeople}人=${totalTransit}元`;
     standardRoute = `台中到${city}來回`;
+    if (firstExpPub) firstExpPub.value = totalTransit || "";
   } else {
-    detailStr = `出差至${city}`;
+    // 自訂地點/其他：允許使用者手動自由填寫大眾交通金額
     standardRoute = city ? `台中到${city}來回` : "台中來回";
+    const userPub = firstExpPub ? (parseInt(firstExpPub.value) || 0) : 0;
+    totalTransit = userPub;
+    if (totalTransit > 0) {
+      detailStr = `台中到${city || '目的地'}大眾交通 ${totalTransit}元`;
+    } else {
+      detailStr = `出差至${city || '目的地'}`;
+    }
   }
 
   const totalIncidental = cb.checked ? (400 * numPeople) : 0;
@@ -527,8 +546,6 @@ function updateCalculation() {
 
   const firstExpRoute = document.getElementById('exp_route_1');
   if (firstExpRoute) firstExpRoute.value = standardRoute;
-  const firstExpPub = document.getElementById('exp_pub_1');
-  if (firstExpPub) firstExpPub.value = totalTransit || "";
   const firstExpAmt = document.getElementById('exp_amt_1');
   if (firstExpAmt) firstExpAmt.value = totalIncidental || "";
   const firstRepDetail = document.getElementById('rep_detail_1');
