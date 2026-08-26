@@ -437,8 +437,9 @@ function buildVoucherHtml(data) {
           <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[5].amt)}</td>
           <td colspan="4" style="text-align:left; font-size:11px;"><b>◎注意事項</b></td>
         </tr>
-        <tr>
-          <td style="text-align:center; font-weight:bold; height:26px; font-size:15px;">合 計</td>
+        <!-- 將 height 高度寫在 <tr> 標籤上 (例如改為 40px 或更大) -->
+        <tr style="height: 40px;">
+          <td style="text-align:center; font-weight:bold; font-size:15px;">合 計</td>
           <td></td>
           <td style="text-align:right; font-weight:bold; font-size:15px;">${data.total ? data.total.toLocaleString() : ''}</td>
           <td colspan="4" style="text-align:left; font-size:11px;">費用單據請先核對法人名稱、統一編號、金額無誤後報銷。</td>
