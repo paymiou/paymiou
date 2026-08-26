@@ -401,40 +401,41 @@ function buildVoucherHtml(data) {
         </tr>
       </thead>
       <tbody>
-        <tr>
-          <td style="height:35px;"></td>
-          <td style="text-align:left; font-size:15px;">${data.items[0].summ}</td>
-          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[0].amt)}</td>
-          <td colspan="4" rowspan="2" class="cell-top-left" style="font-size:15px;">${data.purpose}</td>
+        <!-- 統一在 tr 設定 height，並用 (summ || '&nbsp;') 確保沒字時也能維持 15px 行高 -->
+        <tr style="height: 35px;">
+          <td>&nbsp;</td>
+          <td style="text-align:left; font-size:15px;">${data.items[0].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[0].amt) || '&nbsp;'}</td>
+          <td colspan="4" rowspan="2" class="cell-top-left" style="font-size:15px;">${data.purpose || '&nbsp;'}</td>
         </tr>
-        <tr>
-          <td style="height:26px;"></td>
-          <td style="text-align:left; font-size:15px;">${data.items[1].summ}</td>
-          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[1].amt)}</td>
+        <tr style="height: 35px;">
+          <td>&nbsp;</td>
+          <td style="text-align:left; font-size:15px;">${data.items[1].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[1].amt) || '&nbsp;'}</td>
         </tr>
-        <tr>
-          <td style="height:26px;"></td>
-          <td style="text-align:left; font-size:15px;">${data.items[2].summ}</td>
-          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[2].amt)}</td>
-          <td colspan="4" rowspan="2" class="cell-top-left" style="font-size:15px;">備註：${data.remark}</td>
+        <tr style="height: 35px;">
+          <td>&nbsp;</td>
+          <td style="text-align:left; font-size:15px;">${data.items[2].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[2].amt) || '&nbsp;'}</td>
+          <td colspan="4" rowspan="2" class="cell-top-left" style="font-size:15px;">備註：${data.remark || '&nbsp;'}</td>
         </tr>
-        <tr>
-          <td style="height:26px;"></td>
-          <td style="text-align:left; font-size:15px;">${data.items[3].summ}</td>
-          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[3].amt)}</td>
+        <tr style="height: 35px;">
+          <td>&nbsp;</td>
+          <td style="text-align:left; font-size:15px;">${data.items[3].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[3].amt) || '&nbsp;'}</td>
         </tr>
-        <tr>
-          <td style="height:26px;"></td>
-          <td style="text-align:left; font-size:15px;">${data.items[4].summ}</td>
-          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[4].amt)}</td>
+        <tr style="height: 35px;">
+          <td>&nbsp;</td>
+          <td style="text-align:left; font-size:15px;">${data.items[4].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[4].amt) || '&nbsp;'}</td>
           <td colspan="4" style="text-align:left; font-size:15px;">
-            金額大寫：<span style="letter-spacing: 8px; font-weight: bold; margin-left: 5px;">${chineseTotal}</span>
+            金額大寫：<span style="letter-spacing: 8px; font-weight: bold; margin-left: 5px;">${chineseTotal || '&nbsp;'}</span>
           </td>
         </tr>
-        <tr>
-          <td style="height:26px;"></td>
-          <td style="text-align:left; font-size:15px;">${data.items[5].summ}</td>
-          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[5].amt)}</td>
+        <tr style="height: 35px;">
+          <td>&nbsp;</td>
+          <td style="text-align:left; font-size:15px;">${data.items[5].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[5].amt) || '&nbsp;'}</td>
           <td colspan="4" style="text-align:left; font-size:11px;"><b>◎注意事項</b></td>
         </tr>
         <!-- 將 height 高度寫在 <tr> 標籤上 (例如改為 40px 或更大) -->
