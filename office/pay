@@ -6,7 +6,9 @@
   <title>財團法人慈心有機農業發展基金會 - A4 雙聯支出證明單填寫系統</title>
   <style>
     * { box-sizing: border-box; font-family: "標楷體", "DFKai-SB", "微軟正黑體", sans-serif; }
-    body { background-color: #f4f6f9; margin: 0; padding: 12px; color: #333; }
+    body { background-color: #f4f6f9; margin: 0; padding: 12px; color: #333; transition: background-color 0.3s; }
+    
+    /* 表單區塊 */
     .container { max-width: 900px; margin: 0 auto; background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
     h2 { text-align: center; color: #1f4e78; margin-top: 0; font-size: 22px; }
     
@@ -14,7 +16,6 @@
     .tab-buttons { display: flex; gap: 8px; border-bottom: 2px solid #1f4e78; margin-bottom: 16px; }
     .tab-btn { padding: 10px 20px; border: none; background: #e9ecef; font-size: 15px; font-weight: bold; cursor: pointer; border-radius: 8px 8px 0 0; color: #495057; }
     .tab-btn.active { background: #1f4e78; color: #fff; }
-    
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
@@ -39,19 +40,30 @@
     .btn-submit { background: #1f4e78; color: #fff; border: none; padding: 12px 24px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
     .action-bar { display: flex; justify-content: space-between; margin-top: 20px; border-top: 1px solid #e9ecef; padding-top: 15px; }
 
-    /* 列印 preview 與 A4 排版 (繼承支出證明單排版規律) */
-    @media print {
-      body { background: white !important; padding: 0 !important; }
-      .no-print { display: none !important; }
-      .page-a4 { 
-        border: none !important; box-shadow: none !important; padding: 4mm 3mm !important;
-        width: 198mm !important; height: 287mm !important; page-break-after: avoid !important;
-      }
+    /* 預覽模式工具列 */
+    .preview-toolbar {
+      display: none;
+      text-align: center;
+      padding: 15px;
+      background: #343a40;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      margin: -12px -12px 20px -12px;
     }
+    .preview-toolbar button { border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; margin: 0 10px; }
+    .btn-back { background: #f8f9fa; color: #343a40; }
+    .btn-print-final { background: #28a745; color: #fff; }
 
+    /* 預覽用的背景色 */
+    body.preview-mode { background-color: #525659; }
+
+    /* A4 排版 (繼承支出證明單排版規律) */
     .page-a4 {
-      background: white; width: 198mm; height: 287mm; margin: 0 auto; padding: 4mm 3mm;
+      background: white; width: 198mm; height: 287mm; margin: 0 auto 30px auto; padding: 4mm 3mm;
       box-sizing: border-box; border: 1px solid #ccc; display: none; flex-direction: column; justify-content: space-between;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5); /* 預覽時的陰影 */
     }
     .voucher-box { height: 137mm; box-sizing: border-box; position: relative; padding-top: 2px; }
     .header-container { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3px; }
@@ -70,10 +82,27 @@
     table.grid-table th, table.grid-table td { border: 1px solid #000; padding: 1px 3px; box-sizing: border-box; }
     .cell-top-left { vertical-align: top; text-align: left; padding: 3px !important; }
     .cut-line { border-top: 1px dashed #cccccc; text-align: center; font-size: 10px; color: #bbbbbb; height: 4mm; line-height: 4mm; }
+
+    /* 列印時的樣式：隱藏多餘 UI，去除背景與陰影 */
+    @media print {
+      body { background: white !important; padding: 0 !important; }
+      .no-print, .preview-toolbar { display: none !important; }
+      .page-a4 { 
+        border: none !important; box-shadow: none !important; margin: 0 !important; padding: 4mm 3mm !important;
+        width: 198mm !important; height: 287mm !important; page-break-after: avoid !important; display: flex !important;
+      }
+    }
   </style>
 </head>
 <body>
 
+<!-- 預覽模式的上方工具列 -->
+<div class="preview-toolbar" id="preview-toolbar">
+  <button class="btn-back" onclick="backToEdit()">⬅️ 返回編輯修改</button>
+  <button class="btn-print-final" onclick="window.print()">🖨️ 確認無誤，列印 / 儲存為 PDF</button>
+</div>
+
+<!-- 表單填寫區塊 -->
 <div class="container no-print" id="form-container">
   <h2>📋 專案報帳 - 支出證明單填寫系統</h2>
 
@@ -82,13 +111,13 @@
     <button class="tab-btn" onclick="switchTab(2)">單據二 (下半頁)</button>
   </div>
 
-  <!-- 單據一與單據二表單 -->
   <div id="tab-1" class="tab-content active"></div>
   <div id="tab-2" class="tab-content"></div>
 
   <div class="action-bar">
     <button class="btn-action" onclick="copyTab1ToTab2()">📋 複製「單據一」至「單據二」</button>
-    <button class="btn-submit" onclick="generateAndPrint()">🖨️ 生成 A4 雙聯單並列印</button>
+    <!-- 改為「生成並預覽」，不會直接下載 -->
+    <button class="btn-submit" onclick="previewA4()">👁️ 生成並預覽 A4 雙聯單</button>
   </div>
 </div>
 
@@ -109,10 +138,8 @@ const DEPT_MAP = {
   "高美生態": "620038"
 };
 
-// 摘要選單對照
 const SUMMARY_OPTIONS = ["", "郵資", "茶點費", "講師費", "場地費", "餐費"];
 
-// 初始化渲染雙頁面表單
 window.onload = function() {
   renderForm(1);
   renderForm(2);
@@ -128,7 +155,6 @@ function switchTab(tabNum) {
   });
 }
 
-// 動態渲染填寫表單
 function renderForm(id) {
   const container = document.getElementById(`tab-${id}`);
   let itemRowsHtml = '';
@@ -253,7 +279,6 @@ function calculateTotal(id) {
   return total;
 }
 
-// 國字大寫金額轉換邏輯
 function getChineseAmount(amount) {
   if (!amount || amount <= 0) return "";
   const digits = "零壹貳參肆伍陸柒捌玖";
@@ -276,7 +301,6 @@ function getChineseAmount(amount) {
   return res + "元整";
 }
 
-// 複製單據一資料至單據二[cite: 2]
 function copyTab1ToTab2() {
   document.getElementById('region_2').value = document.getElementById('region_1').value;
   document.getElementById('dept_name_2').value = document.getElementById('dept_name_1').value;
@@ -323,7 +347,6 @@ function getFormData(id) {
   };
 }
 
-// 建立 HTML 列印模板[cite: 2]
 function buildVoucherHtml(data) {
   const chineseTotal = getChineseAmount(data.total);
   const chk1 = data.payType === "款付本人" ? "■" : "□";
@@ -419,23 +442,28 @@ function buildVoucherHtml(data) {
   `;
 }
 
-function generateAndPrint() {
-  const d1 = getFormData(1);
-  const d2 = getFormData(2);
+// 產生內容並切換到「預覽模式」
+function previewA4() {
+  // 將兩份單據的資料渲染進 A4 容器
+  document.getElementById('voucher-1').innerHTML = buildVoucherHtml(getFormData(1));
+  document.getElementById('voucher-2').innerHTML = buildVoucherHtml(getFormData(2));
 
-  document.getElementById('voucher-1').innerHTML = buildVoucherHtml(d1);
-  document.getElementById('voucher-2').innerHTML = buildVoucherHtml(d2);
-
+  // 隱藏表單區，顯示上方工具列與 A4 紙張
   document.getElementById('form-container').style.display = 'none';
+  document.getElementById('preview-toolbar').style.display = 'block';
   document.getElementById('print-area').style.display = 'flex';
+  
+  // 改變網頁背景色，呈現 PDF 檢視器質感
+  document.body.classList.add('preview-mode');
+  window.scrollTo(0, 0);
+}
 
-  window.print();
-
-  // 列印完成後復原畫面
-  setTimeout(() => {
-    document.getElementById('print-area').style.display = 'none';
-    document.getElementById('form-container').style.display = 'block';
-  }, 1000);
+// 從「預覽模式」返回編輯
+function backToEdit() {
+  document.getElementById('form-container').style.display = 'block';
+  document.getElementById('preview-toolbar').style.display = 'none';
+  document.getElementById('print-area').style.display = 'none';
+  document.body.classList.remove('preview-mode');
 }
 </script>
 </body>
