@@ -83,13 +83,30 @@
     .cell-top-left { vertical-align: top; text-align: left; padding: 3px !important; }
     .cut-line { border-top: 1px dashed #cccccc; text-align: center; font-size: 10px; color: #bbbbbb; height: 4mm; line-height: 4mm; }
 
-    /* 列印時的樣式：隱藏多餘 UI，去除背景與陰影 */
+/* 列印時的樣式：隱藏多餘 UI，去除背景與陰影，並消除網址與頁碼 */
     @media print {
-      body { background: white !important; padding: 0 !important; }
-      .no-print, .preview-toolbar { display: none !important; }
+      @page {
+        size: A4 portrait;
+        margin: 0; /* 關鍵：設定為 0 會強制瀏覽器不印出預設的頁首(日期)與頁尾(網址) */
+      }
+      body { 
+        background: white !important; 
+        margin: 0 !important; 
+        padding: 0 !important; 
+      }
+      .no-print, .preview-toolbar { 
+        display: none !important; 
+      }
       .page-a4 { 
-        border: none !important; box-shadow: none !important; margin: 0 !important; padding: 4mm 3mm !important;
-        width: 198mm !important; height: 287mm !important; page-break-after: avoid !important; display: flex !important;
+        border: none !important; 
+        box-shadow: none !important; 
+        margin: 0 auto !important; 
+        /* 因為 @page 設為 0，我們改用 padding 來推開安全邊界，避免內容貼齊紙張邊緣 */
+        padding: 8mm 6mm !important;
+        width: 210mm !important;  /* 填滿標準 A4 寬度 */
+        height: 297mm !important; /* 填滿標準 A4 高度 */
+        page-break-after: avoid !important; 
+        display: flex !important;
       }
     }
   </style>
