@@ -266,11 +266,15 @@ function initDefaultDates() {
   const month = today.getMonth() + 1;
   const date = today.getDate();
 
-  [1, 2].forEach(id => {
-    document.getElementById(`year_${id}`).value = rocYear;
-    document.getElementById(`month_${id}`).value = month;
-    document.getElementById(`day_${id}`).value = date;
-  });
+  // 單據一（上半頁）：自動帶入今天日期
+  document.getElementById('year_1').value = rocYear;
+  document.getElementById('month_1').value = month;
+  document.getElementById('day_1').value = date;
+
+  // 單據二（下半頁）：預設保持空白
+  document.getElementById('year_2').value = "";
+  document.getElementById('month_2').value = "";
+  document.getElementById('day_2').value = "";
 }
 
 function onDeptChange(id) {
