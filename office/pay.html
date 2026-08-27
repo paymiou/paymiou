@@ -4,8 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>財務系統-支出證明單_中慈版本</title>
+  <!-- 引入線上楷體 (Web Font)，解決手機/平板無內建標楷體問題 -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet">
+
   <style>
-    * { box-sizing: border-box; font-family: "標楷體", "DFKai-SB", "微軟正黑體", sans-serif; }
+    * { 
+      box-sizing: border-box; 
+      font-family: "LXGW WenKai TC", "標楷體", "DFKai-SB", "BiauKai", "Kaiti TC", "KaiTi", serif; 
+    }
     body { background-color: #f4f6f9; margin: 0; padding: 12px; color: #333; transition: background-color 0.3s; }
     
     /* 表單區塊 */
@@ -58,13 +66,13 @@
 
     body.preview-mode { background-color: #525659; }
 
-    /* A4 排版 */
+    /* A4 排版 (螢幕預覽用) */
     .page-a4 {
       background: white; width: 198mm; height: 287mm; margin: 0 auto 30px auto; padding: 4mm 3mm;
       box-sizing: border-box; border: 1px solid #ccc; display: none; flex-direction: column; justify-content: space-between;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
-    .voucher-box { height: 137mm; box-sizing: border-box; position: relative; padding-top: 2px; }
+    .voucher-box { height: 135mm; box-sizing: border-box; position: relative; padding-top: 2px; }
     .header-container { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3px; }
     .header-left { width: 52%; display: flex; flex-direction: column; padding-left: 80px; }
     .title-fund { text-align: center; font-size: 17px; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 4px; white-space: nowrap; }
@@ -82,18 +90,59 @@
     .cell-top-left { vertical-align: top; text-align: left; padding: 3px !important; }
     .cut-line { border-top: 1px dashed #cccccc; text-align: center; font-size: 10px; color: #bbbbbb; height: 4mm; line-height: 4mm; }
 
+    /* 手機與電腦列印特別優化：嚴格限定單頁輸出 */
     @media print {
-      @page { size: A4 portrait; margin: 0; }
-      body { background: white !important; padding: 0 !important; margin: 0 !important; }
-      .no-print, .preview-toolbar { display: none !important; }
+      @page { 
+        size: A4 portrait; 
+        margin: 0; 
+      }
+      html, body { 
+        width: 100% !important; 
+        height: 100% !important; 
+        margin: 0 !important; 
+        padding: 0 !important; 
+        overflow: hidden !important; /* 強制切除多餘溢出，絕對不印第二頁 */
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .no-print, .preview-toolbar { 
+        display: none !important; 
+      }
       .page-a4 { 
-        border: none !important; box-shadow: none !important; margin: 0 auto !important; padding: 8mm 6mm !important;
-        width: 210mm !important; height: 297mm !important; page-break-after: avoid !important; display: flex !important;
+        border: none !important; 
+        box-shadow: none !important; 
+        margin: 0 auto !important; 
+        padding: 4mm 5mm !important; /* 精簡邊界留出緩衝 */
+        width: 210mm !important; 
+        height: 297mm !important; 
+        max-height: 297mm !important;
+        page-break-after: avoid !important; 
+        page-break-before: avoid !important;
+        page-break-inside: avoid !important;
+        break-after: avoid !important;
+        break-inside: avoid !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        box-sizing: border-box !important;
+        overflow: hidden !important;
+      }
+      .voucher-box {
+        height: 132mm !important; /* 控制單據高度，防範手機瀏覽器誤算欄高 */
       }
     }
   </style>
 </head>
 <body>
+
+<!-- 摘要的快速下拉選單選項庫 -->
+<datalist id="summary-options">
+  <option value="郵資"></option>
+  <option value="茶點費"></option>
+  <option value="講師費"></option>
+  <option value="場地費"></option>
+  <option value="餐費"></option>
+</datalist>
 
 <div class="preview-toolbar" id="preview-toolbar">
   <button class="btn-back" onclick="backToEdit()">⬅️ 返回編輯修改</button>
@@ -133,8 +182,6 @@ const DEPT_MAP = {
   "高美生態": "620038"
 };
 
-const SUMMARY_OPTIONS = ["", "郵資", "茶點費", "講師費", "場地費", "餐費"];
-
 window.onload = function() {
   renderForm(1);
   renderForm(2);
@@ -154,12 +201,11 @@ function renderForm(id) {
   const container = document.getElementById(`tab-${id}`);
   let itemRowsHtml = '';
   for(let i = 1; i <= 6; i++) {
-    let optionsHtml = SUMMARY_OPTIONS.map(opt => `<option value="${opt}">${opt || '-- 請選擇 --'}</option>`).join('');
     itemRowsHtml += `
       <tr>
         <td>#${i}</td>
         <td>
-          <select id="summ_${id}_${i}">${optionsHtml}</select>
+          <input type="text" id="summ_${id}_${i}" list="summary-options" placeholder="可直接打字或點擊選擇預設項目">
         </td>
         <td><input type="number" id="amt_${id}_${i}" oninput="calculateTotal(${id})"></td>
       </tr>
@@ -183,23 +229,9 @@ function renderForm(id) {
         <label>部門代號</label>
         <input type="text" id="dept_code_${id}" value="632011">
       </div>
-    </div>
-    <div class="row">
-      <div class="col" style="flex: 1.5;">
-        <label>📅 月曆點擊選取 (手機推薦)</label>
-        <input type="date" id="datepicker_${id}" onchange="onDatePick(${id})">
-      </div>
       <div class="col">
-        <label>民國年</label>
-        <input type="text" id="year_${id}">
-      </div>
-      <div class="col">
-        <label>月</label>
-        <input type="text" id="month_${id}">
-      </div>
-      <div class="col">
-        <label>日</label>
-        <input type="text" id="day_${id}">
+        <label>📅 報帳日期</label>
+        <input type="date" id="datepicker_${id}">
       </div>
     </div>
 
@@ -241,30 +273,13 @@ function renderForm(id) {
   `;
 }
 
-function onDatePick(id) {
-  const pickerVal = document.getElementById(`datepicker_${id}`).value;
-  if (!pickerVal) return;
-  const d = new Date(pickerVal);
-  if (!isNaN(d.getTime())) {
-    document.getElementById(`year_${id}`).value = d.getFullYear() - 1911;
-    document.getElementById(`month_${id}`).value = d.getMonth() + 1;
-    document.getElementById(`day_${id}`).value = d.getDate();
-  }
-}
-
 function initDefaultDates() {
-  const today = new Date();
-  const rocYear = today.getFullYear() - 1911;
-  const month = today.getMonth() + 1;
-  const date = today.getDate();
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  const localISOTime = (new Date(now - offset)).toISOString().slice(0, 10);
 
-  document.getElementById('year_1').value = rocYear;
-  document.getElementById('month_1').value = month;
-  document.getElementById('day_1').value = date;
-
-  document.getElementById('year_2').value = "";
-  document.getElementById('month_2').value = "";
-  document.getElementById('day_2').value = "";
+  document.getElementById('datepicker_1').value = localISOTime;
+  document.getElementById('datepicker_2').value = "";
 }
 
 function onDeptChange(id) {
@@ -316,9 +331,6 @@ function copyTab1ToTab2() {
   document.getElementById('region_2').value = document.getElementById('region_1').value;
   document.getElementById('dept_name_2').value = document.getElementById('dept_name_1').value;
   document.getElementById('dept_code_2').value = document.getElementById('dept_code_1').value;
-  document.getElementById('year_2').value = document.getElementById('year_1').value;
-  document.getElementById('month_2').value = document.getElementById('month_1').value;
-  document.getElementById('day_2').value = document.getElementById('day_1').value;
   document.getElementById('datepicker_2').value = document.getElementById('datepicker_1').value;
 
   for (let i = 1; i <= 6; i++) {
@@ -344,13 +356,25 @@ function getFormData(id) {
     items.push({ summ, amt: amt > 0 ? amt : "" });
     total += amt;
   }
+
+  const dateVal = document.getElementById(`datepicker_${id}`).value;
+  let year = "", month = "", day = "";
+  if (dateVal) {
+    const parts = dateVal.split('-');
+    if (parts.length === 3) {
+      year = (parseInt(parts[0], 10) - 1911).toString();
+      month = parseInt(parts[1], 10).toString();
+      day = parseInt(parts[2], 10).toString();
+    }
+  }
+
   return {
     region: document.getElementById(`region_${id}`).value,
     deptName: document.getElementById(`dept_name_${id}`).value,
     deptCode: document.getElementById(`dept_code_${id}`).value,
-    year: document.getElementById(`year_${id}`).value.trim(),
-    month: document.getElementById(`month_${id}`).value.trim(),
-    day: document.getElementById(`day_${id}`).value.trim(),
+    year: year,
+    month: month,
+    day: day,
     purpose: document.getElementById(`purpose_${id}`).value,
     remark: document.getElementById(`remark_${id}`).value,
     payType: document.querySelector(`input[name="pay_${id}"]:checked`).value,
