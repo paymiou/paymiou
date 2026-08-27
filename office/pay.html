@@ -87,11 +87,20 @@
     }
 
     .page-a4 {
-      background: white; width: 190mm; max-width: 100%; height: 285mm; margin: 0 auto 30px auto; padding: 4mm 3mm;
-      box-sizing: border-box; border: 1px solid #ccc; display: none; flex-direction: column; justify-content: space-between;
+      background: white; 
+      width: 198mm; 
+      max-width: 100%; 
+      height: 285mm; 
+      margin: 0 auto 30px auto; 
+      padding: 4mm 3mm;
+      box-sizing: border-box; 
+      border: 1px solid #ccc; 
+      display: none; 
+      flex-direction: column; 
+      justify-content: space-between;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
-    .voucher-box { height: 132mm; box-sizing: border-box; position: relative; padding-top: 2px; }
+    .voucher-box { height: 134mm; box-sizing: border-box; position: relative; padding-top: 2px; overflow: hidden; }
     .header-container { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3px; }
     .header-left { width: 55%; display: flex; flex-direction: column; padding-left: 40px; }
     .title-fund { text-align: center; font-size: 16px; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 4px; white-space: nowrap; }
@@ -104,7 +113,14 @@
     .meta-table .lbl { text-align: right; width: 75px; white-space: nowrap; }
     .meta-table .val-line { border-bottom: 1px solid #000; text-align: center; }
 
-    table.grid-table { width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 12px; }
+    /* 表格強制固定比例，防範手機版壓擠裁切 */
+    table.grid-table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      border: 1.5px solid #000; 
+      font-size: 12px; 
+      table-layout: fixed !important; 
+    }
     table.grid-table th, table.grid-table td { border: 1px solid #000; padding: 1px 3px; box-sizing: border-box; }
     .cell-top-left { vertical-align: top; text-align: left; padding: 3px !important; }
     .cut-line { border-top: 1px dashed #cccccc; text-align: center; font-size: 10px; color: #bbbbbb; height: 4mm; line-height: 4mm; }
@@ -116,8 +132,8 @@
         margin: 0; 
       }
       html, body { 
-        width: 100% !important; 
-        height: 100% !important; 
+        width: 210mm !important; 
+        height: 297mm !important; 
         margin: 0 !important; 
         padding: 0 !important; 
         overflow: hidden !important; 
@@ -131,9 +147,9 @@
         border: none !important; 
         box-shadow: none !important; 
         margin: 0 auto !important; 
-        padding: 5mm 8mm !important; /* 增加邊界緩衝，避免手機列印邊緣被切除 */
-        width: 194mm !important; 
-        max-width: 100% !important;
+        padding: 4mm 4mm !important; 
+        width: 198mm !important; 
+        max-width: 198mm !important;
         height: 287mm !important; 
         max-height: 287mm !important;
         page-break-after: avoid !important; 
@@ -148,7 +164,8 @@
         overflow: hidden !important;
       }
       .voucher-box {
-        height: 128mm !important; /* 修正單據區域高度，防範手機瀏覽器計算列高溢出 */
+        height: 134mm !important; 
+        overflow: hidden !important;
       }
     }
   </style>
@@ -436,65 +453,75 @@ function buildVoucherHtml(data) {
     </div>
 
     <table class="grid-table">
+      <!-- 硬性定義 7 欄比例，防範手機版 PDF 壓擠裁切 -->
+      <colgroup>
+        <col style="width: 12%;">
+        <col style="width: 18%;">
+        <col style="width: 12%;">
+        <col style="width: 15%;">
+        <col style="width: 12%;">
+        <col style="width: 12%;">
+        <col style="width: 19%;">
+      </colgroup>
       <thead>
-        <tr style="height: 28px;">
-          <th style="width: 12%;">會計科目</th>
-          <th style="width: 18%;">摘要</th>
-          <th style="width: 12%;">金額</th>
-          <th colspan="4" style="text-align: left; border-left: 1px solid #000; font-size: 15px;">用途：</th>
+        <tr style="height: 26px;">
+          <th>會計科目</th>
+          <th>摘要</th>
+          <th>金額</th>
+          <th colspan="4" style="text-align: left; border-left: 1px solid #000; font-size: 14px; padding-left: 4px;">用途：</th>
         </tr>
       </thead>
       <tbody>
-        <tr style="height: 35px;">
+        <tr style="height: 32px;">
           <td>&nbsp;</td>
-          <td style="text-align:left; font-size:15px;">${data.items[0].summ || '&nbsp;'}</td>
-          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[0].amt) || '&nbsp;'}</td>
-          <td colspan="4" rowspan="2" class="cell-top-left" style="font-size:15px;">${data.purpose || '&nbsp;'}</td>
+          <td style="text-align:left; font-size:14px; padding-left:4px;">${data.items[0].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:14px; padding-right:4px;">${fmtAmt(data.items[0].amt) || '&nbsp;'}</td>
+          <td colspan="4" rowspan="2" class="cell-top-left" style="font-size:14px;">${data.purpose || '&nbsp;'}</td>
         </tr>
-        <tr style="height: 35px;">
+        <tr style="height: 32px;">
           <td>&nbsp;</td>
-          <td style="text-align:left; font-size:15px;">${data.items[1].summ || '&nbsp;'}</td>
-          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[1].amt) || '&nbsp;'}</td>
+          <td style="text-align:left; font-size:14px; padding-left:4px;">${data.items[1].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:14px; padding-right:4px;">${fmtAmt(data.items[1].amt) || '&nbsp;'}</td>
         </tr>
-        <tr style="height: 35px;">
+        <tr style="height: 32px;">
           <td>&nbsp;</td>
-          <td style="text-align:left; font-size:15px;">${data.items[2].summ || '&nbsp;'}</td>
-          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[2].amt) || '&nbsp;'}</td>
-          <td colspan="4" rowspan="2" class="cell-top-left" style="font-size:15px;">備註：${data.remark || '&nbsp;'}</td>
+          <td style="text-align:left; font-size:14px; padding-left:4px;">${data.items[2].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:14px; padding-right:4px;">${fmtAmt(data.items[2].amt) || '&nbsp;'}</td>
+          <td colspan="4" rowspan="2" class="cell-top-left" style="font-size:14px;">備註：${data.remark || '&nbsp;'}</td>
         </tr>
-        <tr style="height: 35px;">
+        <tr style="height: 32px;">
           <td>&nbsp;</td>
-          <td style="text-align:left; font-size:15px;">${data.items[3].summ || '&nbsp;'}</td>
-          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[3].amt) || '&nbsp;'}</td>
+          <td style="text-align:left; font-size:14px; padding-left:4px;">${data.items[3].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:14px; padding-right:4px;">${fmtAmt(data.items[3].amt) || '&nbsp;'}</td>
         </tr>
-        <tr style="height: 35px;">
+        <tr style="height: 32px;">
           <td>&nbsp;</td>
-          <td style="text-align:left; font-size:15px;">${data.items[4].summ || '&nbsp;'}</td>
-          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[4].amt) || '&nbsp;'}</td>
-          <td colspan="4" style="text-align:left; font-size:15px;">
-            金額大寫：<span style="letter-spacing: 8px; font-weight: bold; margin-left: 5px;">${chineseTotal || '&nbsp;'}</span>
+          <td style="text-align:left; font-size:14px; padding-left:4px;">${data.items[4].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:14px; padding-right:4px;">${fmtAmt(data.items[4].amt) || '&nbsp;'}</td>
+          <td colspan="4" style="text-align:left; font-size:14px; padding-left:4px;">
+            金額大寫：<span style="letter-spacing: 6px; font-weight: bold; margin-left: 4px;">${chineseTotal || '&nbsp;'}</span>
           </td>
         </tr>
-        <tr style="height: 35px;">
+        <tr style="height: 32px;">
           <td>&nbsp;</td>
-          <td style="text-align:left; font-size:15px;">${data.items[5].summ || '&nbsp;'}</td>
-          <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[5].amt) || '&nbsp;'}</td>
-          <td colspan="4" style="text-align:left; font-size:11px;"><b>◎注意事項</b></td>
+          <td style="text-align:left; font-size:14px; padding-left:4px;">${data.items[5].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:14px; padding-right:4px;">${fmtAmt(data.items[5].amt) || '&nbsp;'}</td>
+          <td colspan="4" style="text-align:left; font-size:11px; padding-left:4px;"><b>◎注意事項</b></td>
         </tr>
-        <tr style="height: 40px;">
-          <td style="text-align:center; font-weight:bold; font-size:15px; vertical-align:middle;">合 計</td>
+        <tr style="height: 32px;">
+          <td style="text-align:center; font-weight:bold; font-size:14px; vertical-align:middle;">合 計</td>
           <td style="vertical-align:middle;">&nbsp;</td>
-          <td style="text-align:right; font-weight:bold; font-size:15px; vertical-align:middle;">${data.total ? data.total.toLocaleString() : ''}</td>
-          <td colspan="4" style="text-align:left; font-size:11px; vertical-align:middle; line-height:1.3;">費用單據請先核對法人名稱、統一編號、金額無誤後報銷。</td>
+          <td style="text-align:right; font-weight:bold; font-size:14px; vertical-align:middle; padding-right:4px;">${data.total ? data.total.toLocaleString() : ''}</td>
+          <td colspan="4" style="text-align:left; font-size:10.5px; vertical-align:middle; padding-left:4px; white-space:nowrap;">費用單據請先核對法人名稱、統一編號、金額無誤後報銷。</td>
         </tr>
-        <tr>
-          <td style="text-align:center; vertical-align:top; height:80px;">核準</td>
-          <td style="text-align:center; vertical-align:top;">審核</td>
-          <td style="text-align:center; vertical-align:top;">經辦</td>
-          <td style="width: 15%; vertical-align:top; font-size: 11px;">現金支出 □<br>支票NO.</td>
-          <td style="width: 12%; text-align:center; vertical-align:top; font-size: 12px;">付訖</td>
-          <td style="width: 12%; text-align:center; vertical-align:top; font-size: 12px;">簽收</td>
-          <td style="width: 19%; vertical-align:top; font-size: 11px; line-height: 1.3;">
+        <tr style="height: 75px;">
+          <td style="text-align:center; vertical-align:top; padding-top:2px;">核準</td>
+          <td style="text-align:center; vertical-align:top; padding-top:2px;">審核</td>
+          <td style="text-align:center; vertical-align:top; padding-top:2px;">經辦</td>
+          <td style="vertical-align:top; font-size: 10.5px; padding: 2px;">現金支出 □<br>支票NO.</td>
+          <td style="text-align:center; vertical-align:top; font-size: 11px; padding-top:2px;">付訖</td>
+          <td style="text-align:center; vertical-align:top; font-size: 11px; padding-top:2px;">簽收</td>
+          <td style="vertical-align:top; font-size: 10.5px; padding: 2px; line-height: 1.25;">
             ${chk1} 款付本人<br>${chk2} 款付廠商<br>${chk3} 款付：慈心基金會<br>${chk4} 沖
           </td>
         </tr>
