@@ -37,7 +37,6 @@
     
     label { font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px; color: #495057; white-space: nowrap; }
     
-    /* 統一所有欄位（含文字、數字、日期選單、下拉選項）在手機與電腦端的高寬尺寸 */
     input[type="text"], input[type="number"], input[type="date"], select, textarea { 
       width: 100%; 
       height: 38px; 
@@ -82,26 +81,26 @@
 
     body.preview-mode { background-color: #525659; }
 
-    /* 2. 輸出單據 (A4 雙聯單)：強制全數套用 BiauKai (標楷體) */
+    /* 2. 輸出單據 (A4 雙聯單)：全數套用 BiauKai (標楷體) */
     .page-a4, .page-a4 * {
       font-family: "BiauKai", "標楷體", "DFKai-SB", "Kaiti TC", "KaiTi", serif !important;
     }
 
     .page-a4 {
-      background: white; width: 198mm; height: 287mm; margin: 0 auto 30px auto; padding: 4mm 3mm;
+      background: white; width: 190mm; max-width: 100%; height: 285mm; margin: 0 auto 30px auto; padding: 4mm 3mm;
       box-sizing: border-box; border: 1px solid #ccc; display: none; flex-direction: column; justify-content: space-between;
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
-    .voucher-box { height: 135mm; box-sizing: border-box; position: relative; padding-top: 2px; }
+    .voucher-box { height: 132mm; box-sizing: border-box; position: relative; padding-top: 2px; }
     .header-container { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3px; }
-    .header-left { width: 52%; display: flex; flex-direction: column; padding-left: 80px; }
-    .title-fund { text-align: center; font-size: 17px; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 4px; white-space: nowrap; }
-    .title-doc { text-align: center; font-size: 22px; font-weight: bold; letter-spacing: 6px; margin: 4px 0; }
-    .title-date-row { display: flex; justify-content: flex-start; align-items: flex-end; font-size: 13px; margin-top: 8px; }
-    .date-text { padding-left: 20px; font-size: 15px; }
-    .voucher-text { margin-left: 50px; }
-    .header-right { width: 48%; display: flex; justify-content: flex-end; }
-    .meta-table { width: 70%; border-collapse: collapse; font-size: 13px; }
+    .header-left { width: 55%; display: flex; flex-direction: column; padding-left: 40px; }
+    .title-fund { text-align: center; font-size: 16px; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 4px; white-space: nowrap; }
+    .title-doc { text-align: center; font-size: 21px; font-weight: bold; letter-spacing: 5px; margin: 4px 0; }
+    .title-date-row { display: flex; justify-content: flex-start; align-items: flex-end; font-size: 13px; margin-top: 6px; }
+    .date-text { padding-left: 10px; font-size: 14px; }
+    .voucher-text { margin-left: 30px; }
+    .header-right { width: 45%; display: flex; justify-content: flex-end; }
+    .meta-table { width: 80%; border-collapse: collapse; font-size: 13px; }
     .meta-table .lbl { text-align: right; width: 75px; white-space: nowrap; }
     .meta-table .val-line { border-bottom: 1px solid #000; text-align: center; }
 
@@ -110,7 +109,7 @@
     .cell-top-left { vertical-align: top; text-align: left; padding: 3px !important; }
     .cut-line { border-top: 1px dashed #cccccc; text-align: center; font-size: 10px; color: #bbbbbb; height: 4mm; line-height: 4mm; }
 
-    /* 列印設定：保持單頁輸出 */
+    /* 防裁切與縮放優化：適用手機與電腦 PDF 輸出 */
     @media print {
       @page { 
         size: A4 portrait; 
@@ -132,10 +131,11 @@
         border: none !important; 
         box-shadow: none !important; 
         margin: 0 auto !important; 
-        padding: 4mm 5mm !important; 
-        width: 210mm !important; 
-        height: 297mm !important; 
-        max-height: 297mm !important;
+        padding: 5mm 8mm !important; /* 增加邊界緩衝，避免手機列印邊緣被切除 */
+        width: 194mm !important; 
+        max-width: 100% !important;
+        height: 287mm !important; 
+        max-height: 287mm !important;
         page-break-after: avoid !important; 
         page-break-before: avoid !important;
         page-break-inside: avoid !important;
@@ -148,7 +148,7 @@
         overflow: hidden !important;
       }
       .voucher-box {
-        height: 132mm !important; 
+        height: 128mm !important; /* 修正單據區域高度，防範手機瀏覽器計算列高溢出 */
       }
     }
   </style>
