@@ -83,14 +83,14 @@
 
     /* 2. 輸出單據 (A4 雙聯單)：全數套用 BiauKai (標楷體) */
     .page-a4, .page-a4 * {
-      font-family: "BiauKai", "標楷體", "DFKai-SB", "Kaiti TC", "KaiTi", serif !important;
+      font-family: "LXGW WenKai TC", "BiauKai", "標楷體", "DFKai-SB", "Kaiti TC", "KaiTi", serif !important;
     }
 
     .page-a4 {
       background: white; 
-      width: 198mm; 
+      width: 195mm; 
       max-width: 100%; 
-      height: 285mm; 
+      height: 280mm; 
       margin: 0 auto 30px auto; 
       padding: 4mm 3mm;
       box-sizing: border-box; 
@@ -101,17 +101,6 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
     .voucher-box { height: 130mm; box-sizing: border-box; position: relative; padding-top: 2px; overflow: hidden; }
-    .header-container { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2px; }
-    .header-left { width: 55%; display: flex; flex-direction: column; padding-left: 40px; }
-    .title-fund { text-align: center; font-size: 16px; font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 3px; white-space: nowrap; }
-    .title-doc { text-align: center; font-size: 20px; font-weight: bold; letter-spacing: 5px; margin: 3px 0; }
-    .title-date-row { display: flex; justify-content: flex-start; align-items: flex-end; font-size: 13px; margin-top: 4px; }
-    .date-text { padding-left: 10px; font-size: 14px; }
-    .voucher-text { margin-left: 30px; }
-    .header-right { width: 45%; display: flex; justify-content: flex-end; }
-    .meta-table { width: 80%; border-collapse: collapse; font-size: 13px; }
-    .meta-table .lbl { text-align: right; width: 75px; white-space: nowrap; }
-    .meta-table .val-line { border-bottom: 1px solid #000; text-align: center; }
 
     /* 表格強制固定比例 */
     table.grid-table { 
@@ -123,9 +112,9 @@
     }
     table.grid-table th, table.grid-table td { border: 1px solid #000; padding: 1px 3px; box-sizing: border-box; }
     .cell-top-left { vertical-align: top; text-align: left; padding: 3px !important; }
-    .cut-line { border-top: 1px dashed #cccccc; text-align: center; font-size: 10px; color: #bbbbbb; height: 3mm; line-height: 3mm; }
+    .cut-line { border-top: 1px dashed #cccccc; text-align: center; font-size: 10px; color: #bbbbbb; height: 6mm; line-height: 6mm; margin: 2mm 0; }
 
-    /* 全面優化列印與 PDF 輸出：預設 A4，徹底清除灰邊與多餘頁面 */
+    /* 全面優化列印與 PDF 輸出：放棄容易崩壞的 Flexbox，改用純 Table 列印 */
     @media print {
       @page { 
         size: A4 portrait; 
@@ -134,10 +123,9 @@
       html, body { 
         width: 100% !important; 
         height: 100% !important; 
-        max-height: 100vh !important;
         margin: 0 !important; 
         padding: 0 !important; 
-        background: #ffffff !important; /* 強制移除背景灰邊 */
+        background: #ffffff !important; 
         overflow: hidden !important; 
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
@@ -148,28 +136,23 @@
       .page-a4 { 
         border: none !important; 
         box-shadow: none !important; 
-        margin: 0 !important; 
-        padding: 5mm 6mm !important; 
-        width: 100% !important; 
+        margin: 0 auto !important; 
+        padding: 4mm 5mm !important; 
+        width: 195mm !important; 
         max-width: 100% !important;
-        height: 100vh !important; 
-        max-height: 100vh !important;
-        background: #ffffff !important; /* 確保畫布純白 */
-        page-break-after: avoid !important; 
-        page-break-before: avoid !important;
-        page-break-inside: avoid !important;
-        break-after: avoid !important;
-        break-before: avoid !important;
-        break-inside: avoid !important;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: space-between !important;
+        height: 278mm !important; 
+        max-height: 278mm !important;
+        background: #ffffff !important; 
+        display: block !important; 
         box-sizing: border-box !important;
         overflow: hidden !important;
+        page-break-after: avoid !important;
+        break-after: avoid !important;
       }
       .voucher-box {
-        height: 124mm !important; 
+        height: 130mm !important; 
         overflow: hidden !important;
+        display: block !important;
       }
     }
   </style>
@@ -425,6 +408,7 @@ function getFormData(id) {
   };
 }
 
+// 關鍵修改：將抬頭與部門欄位完全改寫為純 HTML Table，徹底解開行動裝置 Flexbox 塌陷的問題
 function buildVoucherHtml(data) {
   const chineseTotal = getChineseAmount(data.total);
   const chk1 = data.payType === "款付本人" ? "■" : "□";
@@ -438,94 +422,109 @@ function buildVoucherHtml(data) {
   const dayStr = data.day ? `<b>${data.day}</b>` : `&nbsp;&nbsp;`;
 
   return `
-    <div class="header-container">
-      <div class="header-left">
-        <div class="title-fund">財團法人慈心有機農業發展基金會</div>
-        <div class="title-doc">支 出 證 明 單</div>
-        <div class="title-date-row">
-          <div class="date-text">${yearStr} 年 ${monthStr} 月 ${dayStr} 日</div>
-          <div class="voucher-text">傳票NO.</div>
-        </div>
-      </div>
-      <div class="header-right">
-        <table class="meta-table">
-          <tr><td class="lbl">部區別：</td><td class="val-line">${data.region}</td></tr>
-          <tr><td class="lbl">部門名稱：</td><td class="val-line">${data.deptName}</td></tr>
-          <tr><td class="lbl">部門代號：</td><td class="val-line">${data.deptCode}</td></tr>
-        </table>
-      </div>
-    </div>
+    <!-- 純 Table 架構抬頭 -->
+    <table style="width:100%; border-collapse:collapse; border:none; margin-bottom:4px; table-layout:fixed;">
+      <tr>
+        <td style="width:58%; vertical-align:bottom; border:none; padding:0;">
+          <div style="text-align:center; font-size:16px; font-weight:bold; border-bottom:1px solid #000; padding-bottom:2px; white-space:nowrap;">財團法人慈心有機農業發展基金會</div>
+          <div style="text-align:center; font-size:20px; font-weight:bold; letter-spacing:5px; margin:2px 0; white-space:nowrap;">支 出 證 明 單</div>
+          <table style="width:100%; border-collapse:collapse; border:none; margin-top:2px;">
+            <tr>
+              <td style="text-align:left; font-size:12px; border:none; padding:0; white-space:nowrap;">${yearStr} 年 ${monthStr} 月 ${dayStr} 日</td>
+              <td style="text-align:right; font-size:12px; border:none; padding:0; white-space:nowrap;">傳票NO.</td>
+            </tr>
+          </table>
+        </td>
+        <td style="width:4%; border:none;"></td>
+        <td style="width:38%; vertical-align:bottom; border:none; padding:0;">
+          <table style="width:100%; border-collapse:collapse; font-size:12px; border:none;">
+            <tr>
+              <td style="text-align:right; width:65px; border:none; padding:1px 0; white-space:nowrap;">部區別：</td>
+              <td style="border:none; border-bottom:1px solid #000; text-align:center; padding:1px 0;">${data.region}</td>
+            </tr>
+            <tr>
+              <td style="text-align:right; border:none; padding:1px 0; white-space:nowrap;">部門名稱：</td>
+              <td style="border:none; border-bottom:1px solid #000; text-align:center; padding:1px 0;">${data.deptName}</td>
+            </tr>
+            <tr>
+              <td style="text-align:right; border:none; padding:1px 0; white-space:nowrap;">部門代號：</td>
+              <td style="border:none; border-bottom:1px solid #000; text-align:center; padding:1px 0;">${data.deptCode}</td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
 
+    <!-- 主表格：100% 硬性欄位比例與縮微邊距，確保注意事項文字絕不換行 -->
     <table class="grid-table">
-      <!-- 硬性定義 7 欄比例 -->
       <colgroup>
-        <col style="width: 12%;">
+        <col style="width: 11%;">
         <col style="width: 18%;">
-        <col style="width: 12%;">
+        <col style="width: 11%;">
         <col style="width: 15%;">
-        <col style="width: 12%;">
-        <col style="width: 12%;">
-        <col style="width: 19%;">
+        <col style="width: 10%;">
+        <col style="width: 10%;">
+        <col style="width: 25%;">
       </colgroup>
       <thead>
         <tr style="height: 24px;">
           <th>會計科目</th>
           <th>摘要</th>
           <th>金額</th>
-          <th colspan="4" style="text-align: left; border-left: 1px solid #000; font-size: 13.5px; padding-left: 4px;">用途：</th>
+          <th colspan="4" style="text-align: left; border-left: 1px solid #000; font-size: 13px; padding-left: 4px;">用途：</th>
         </tr>
       </thead>
       <tbody>
-        <tr style="height: 29px;">
+        <tr style="height: 28px;">
           <td>&nbsp;</td>
-          <td style="text-align:left; font-size:13.5px; padding-left:4px;">${data.items[0].summ || '&nbsp;'}</td>
-          <td style="text-align:right; font-size:13.5px; padding-right:4px;">${fmtAmt(data.items[0].amt) || '&nbsp;'}</td>
-          <td colspan="4" rowspan="2" class="cell-top-left" style="font-size:13.5px;">${data.purpose || '&nbsp;'}</td>
+          <td style="text-align:left; font-size:13px; padding-left:3px;">${data.items[0].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:13px; padding-right:3px;">${fmtAmt(data.items[0].amt) || '&nbsp;'}</td>
+          <td colspan="4" rowspan="2" class="cell-top-left" style="font-size:13px;">${data.purpose || '&nbsp;'}</td>
         </tr>
-        <tr style="height: 29px;">
+        <tr style="height: 28px;">
           <td>&nbsp;</td>
-          <td style="text-align:left; font-size:13.5px; padding-left:4px;">${data.items[1].summ || '&nbsp;'}</td>
-          <td style="text-align:right; font-size:13.5px; padding-right:4px;">${fmtAmt(data.items[1].amt) || '&nbsp;'}</td>
+          <td style="text-align:left; font-size:13px; padding-left:3px;">${data.items[1].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:13px; padding-right:3px;">${fmtAmt(data.items[1].amt) || '&nbsp;'}</td>
         </tr>
-        <tr style="height: 29px;">
+        <tr style="height: 28px;">
           <td>&nbsp;</td>
-          <td style="text-align:left; font-size:13.5px; padding-left:4px;">${data.items[2].summ || '&nbsp;'}</td>
-          <td style="text-align:right; font-size:13.5px; padding-right:4px;">${fmtAmt(data.items[2].amt) || '&nbsp;'}</td>
-          <td colspan="4" rowspan="2" class="cell-top-left" style="font-size:13.5px;">備註：${data.remark || '&nbsp;'}</td>
+          <td style="text-align:left; font-size:13px; padding-left:3px;">${data.items[2].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:13px; padding-right:3px;">${fmtAmt(data.items[2].amt) || '&nbsp;'}</td>
+          <td colspan="4" rowspan="2" class="cell-top-left" style="font-size:13px;">備註：${data.remark || '&nbsp;'}</td>
         </tr>
-        <tr style="height: 29px;">
+        <tr style="height: 28px;">
           <td>&nbsp;</td>
-          <td style="text-align:left; font-size:13.5px; padding-left:4px;">${data.items[3].summ || '&nbsp;'}</td>
-          <td style="text-align:right; font-size:13.5px; padding-right:4px;">${fmtAmt(data.items[3].amt) || '&nbsp;'}</td>
+          <td style="text-align:left; font-size:13px; padding-left:3px;">${data.items[3].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:13px; padding-right:3px;">${fmtAmt(data.items[3].amt) || '&nbsp;'}</td>
         </tr>
-        <tr style="height: 29px;">
+        <tr style="height: 28px;">
           <td>&nbsp;</td>
-          <td style="text-align:left; font-size:13.5px; padding-left:4px;">${data.items[4].summ || '&nbsp;'}</td>
-          <td style="text-align:right; font-size:13.5px; padding-right:4px;">${fmtAmt(data.items[4].amt) || '&nbsp;'}</td>
-          <td colspan="4" style="text-align:left; font-size:13.5px; padding-left:4px;">
-            金額大寫：<span style="letter-spacing: 5px; font-weight: bold; margin-left: 4px;">${chineseTotal || '&nbsp;'}</span>
+          <td style="text-align:left; font-size:13px; padding-left:3px;">${data.items[4].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:13px; padding-right:3px;">${fmtAmt(data.items[4].amt) || '&nbsp;'}</td>
+          <td colspan="4" style="text-align:left; font-size:13px; padding-left:3px; white-space:nowrap;">
+            金額大寫：<span style="letter-spacing: 4px; font-weight: bold; margin-left: 4px;">${chineseTotal || '&nbsp;'}</span>
           </td>
         </tr>
-        <tr style="height: 29px;">
+        <tr style="height: 28px;">
           <td>&nbsp;</td>
-          <td style="text-align:left; font-size:13.5px; padding-left:4px;">${data.items[5].summ || '&nbsp;'}</td>
-          <td style="text-align:right; font-size:13.5px; padding-right:4px;">${fmtAmt(data.items[5].amt) || '&nbsp;'}</td>
-          <td colspan="4" style="text-align:left; font-size:10.5px; padding-left:4px;"><b>◎注意事項</b></td>
+          <td style="text-align:left; font-size:13px; padding-left:3px;">${data.items[5].summ || '&nbsp;'}</td>
+          <td style="text-align:right; font-size:13px; padding-right:3px;">${fmtAmt(data.items[5].amt) || '&nbsp;'}</td>
+          <td colspan="4" style="text-align:left; font-size:10px; padding-left:3px;"><b>◎注意事項</b></td>
         </tr>
-        <tr style="height: 29px;">
-          <td style="text-align:center; font-weight:bold; font-size:13.5px; vertical-align:middle;">合 計</td>
+        <tr style="height: 28px;">
+          <td style="text-align:center; font-weight:bold; font-size:13px; vertical-align:middle;">合 計</td>
           <td style="vertical-align:middle;">&nbsp;</td>
-          <td style="text-align:right; font-weight:bold; font-size:13.5px; vertical-align:middle; padding-right:4px;">${data.total ? data.total.toLocaleString() : ''}</td>
-          <td colspan="4" style="text-align:left; font-size:10px; vertical-align:middle; padding-left:4px; white-space:nowrap;">費用單據請先核對法人名稱、統一編號、金額無誤後報銷。</td>
+          <td style="text-align:right; font-weight:bold; font-size:13px; vertical-align:middle; padding-right:3px;">${data.total ? data.total.toLocaleString() : ''}</td>
+          <td colspan="4" style="text-align:left; font-size:9.5px; vertical-align:middle; padding-left:3px; white-space:nowrap; overflow:hidden;">費用單據請先核對法人名稱、統一編號、金額無誤後報銷。</td>
         </tr>
-        <tr style="height: 68px;">
+        <tr style="height: 65px;">
           <td style="text-align:center; vertical-align:top; padding-top:2px;">核準</td>
           <td style="text-align:center; vertical-align:top; padding-top:2px;">審核</td>
           <td style="text-align:center; vertical-align:top; padding-top:2px;">經辦</td>
-          <td style="vertical-align:top; font-size: 10px; padding: 2px;">現金支出 □<br>支票NO.</td>
-          <td style="text-align:center; vertical-align:top; font-size: 10.5px; padding-top:2px;">付訖</td>
-          <td style="text-align:center; vertical-align:top; font-size: 10.5px; padding-top:2px;">簽收</td>
-          <td style="vertical-align:top; font-size: 10px; padding: 2px; line-height: 1.2;">
+          <td style="vertical-align:top; font-size: 9.5px; padding: 2px;">現金支出 □<br>支票NO.</td>
+          <td style="text-align:center; vertical-align:top; font-size: 10px; padding-top:2px;">付訖</td>
+          <td style="text-align:center; vertical-align:top; font-size: 10px; padding-top:2px;">簽收</td>
+          <td style="vertical-align:top; font-size: 9.5px; padding: 2px; line-height: 1.25;">
             ${chk1} 款付本人<br>${chk2} 款付廠商<br>${chk3} 款付：慈心基金會<br>${chk4} 沖
           </td>
         </tr>
@@ -540,7 +539,7 @@ function previewA4() {
 
   document.getElementById('form-container').style.display = 'none';
   document.getElementById('preview-toolbar').style.display = 'block';
-  document.getElementById('print-area').style.display = 'flex';
+  document.getElementById('print-area').style.display = 'block';
   
   document.body.classList.add('preview-mode');
   window.scrollTo(0, 0);
