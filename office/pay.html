@@ -4,16 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>財務系統-支出證明單_中慈版本</title>
-  <!-- 引入線上楷體 (Web Font)，解決手機/平板無內建標楷體問題 -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet">
-
   <style>
-    * { 
-      box-sizing: border-box; 
-      font-family: "LXGW WenKai TC", "標楷體", "DFKai-SB", "BiauKai", "Kaiti TC", "KaiTi", serif; 
+    * { box-sizing: border-box; }
+    
+    /* 1. 填報系統介面：使用 Consolas 字體 */
+    #form-container, #form-container * { 
+      font-family: Consolas, "Microsoft JhengHei", Monaco, monospace; 
     }
+    
     body { background-color: #f4f6f9; margin: 0; padding: 12px; color: #333; transition: background-color 0.3s; }
     
     /* 表單區塊 */
@@ -66,7 +64,11 @@
 
     body.preview-mode { background-color: #525659; }
 
-    /* A4 排版 (螢幕預覽用) */
+    /* 2. 輸出單據 (A4 雙聯單)：強制全數套用 BiauKai (標楷體) */
+    .page-a4, .page-a4 * {
+      font-family: "BiauKai", "標楷體", "DFKai-SB", "Kaiti TC", "KaiTi", serif !important;
+    }
+
     .page-a4 {
       background: white; width: 198mm; height: 287mm; margin: 0 auto 30px auto; padding: 4mm 3mm;
       box-sizing: border-box; border: 1px solid #ccc; display: none; flex-direction: column; justify-content: space-between;
@@ -90,7 +92,7 @@
     .cell-top-left { vertical-align: top; text-align: left; padding: 3px !important; }
     .cut-line { border-top: 1px dashed #cccccc; text-align: center; font-size: 10px; color: #bbbbbb; height: 4mm; line-height: 4mm; }
 
-    /* 手機與電腦列印特別優化：嚴格限定單頁輸出 */
+    /* 列印設定：保持單頁輸出 */
     @media print {
       @page { 
         size: A4 portrait; 
@@ -101,7 +103,7 @@
         height: 100% !important; 
         margin: 0 !important; 
         padding: 0 !important; 
-        overflow: hidden !important; /* 強制切除多餘溢出，絕對不印第二頁 */
+        overflow: hidden !important; 
         -webkit-print-color-adjust: exact;
         print-color-adjust: exact;
       }
@@ -112,7 +114,7 @@
         border: none !important; 
         box-shadow: none !important; 
         margin: 0 auto !important; 
-        padding: 4mm 5mm !important; /* 精簡邊界留出緩衝 */
+        padding: 4mm 5mm !important; 
         width: 210mm !important; 
         height: 297mm !important; 
         max-height: 297mm !important;
@@ -128,21 +130,12 @@
         overflow: hidden !important;
       }
       .voucher-box {
-        height: 132mm !important; /* 控制單據高度，防範手機瀏覽器誤算欄高 */
+        height: 132mm !important; 
       }
     }
   </style>
 </head>
 <body>
-
-<!-- 摘要的快速下拉選單選項庫 -->
-<datalist id="summary-options">
-  <option value="郵資"></option>
-  <option value="茶點費"></option>
-  <option value="講師費"></option>
-  <option value="場地費"></option>
-  <option value="餐費"></option>
-</datalist>
 
 <div class="preview-toolbar" id="preview-toolbar">
   <button class="btn-back" onclick="backToEdit()">⬅️ 返回編輯修改</button>
@@ -201,11 +194,22 @@ function renderForm(id) {
   const container = document.getElementById(`tab-${id}`);
   let itemRowsHtml = '';
   for(let i = 1; i <= 6; i++) {
+    // 摘要欄位改用雙軌模式：輸入框 + 下拉選單按鈕（確保跨平台/手機版 100% 完整顯示所有選項）
     itemRowsHtml += `
       <tr>
         <td>#${i}</td>
         <td>
-          <input type="text" id="summ_${id}_${i}" list="summary-options" placeholder="可直接打字或點擊選擇預設項目">
+          <div style="display: flex; gap: 4px;">
+            <input type="text" id="summ_${id}_${i}" placeholder="可直接打字或選右側項目" style="flex: 1;">
+            <select style="width: 100px; flex: 0 0 100px; padding: 4px;" onchange="if(this.value){ document.getElementById('summ_${id}_${i}').value = this.value; this.selectedIndex = 0; }">
+              <option value="">快速選擇</option>
+              <option value="郵資">郵資</option>
+              <option value="茶點費">茶點費</option>
+              <option value="講師費">講師費</option>
+              <option value="場地費">場地費</option>
+              <option value="餐費">餐費</option>
+            </select>
+          </div>
         </td>
         <td><input type="number" id="amt_${id}_${i}" oninput="calculateTotal(${id})"></td>
       </tr>
