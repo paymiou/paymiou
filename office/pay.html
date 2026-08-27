@@ -22,11 +22,11 @@
     .section-title { font-size: 15px; font-weight: bold; color: #1f4e78; border-bottom: 1.5px solid #1f4e78; padding-bottom: 4px; margin-top: 14px; margin-bottom: 10px; }
     
     .row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; align-items: center; }
-    .col { flex: 1; min-width: 150px; }
+    .col { flex: 1; min-width: 140px; }
     
     label { font-size: 13px; font-weight: bold; display: block; margin-bottom: 4px; color: #495057; }
-    input[type="text"], input[type="number"], select, textarea { 
-      width: 100%; padding: 7px; font-size: 14px; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; 
+    input[type="text"], input[type="number"], input[type="date"], select, textarea { 
+      width: 100%; padding: 7px; font-size: 14px; border: 1px solid #ced4da; border-radius: 6px; box-sizing: border-box; background-color: #fff;
     }
     
     .item-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
@@ -56,14 +56,13 @@
     .btn-back { background: #f8f9fa; color: #343a40; }
     .btn-print-final { background: #28a745; color: #fff; }
 
-    /* 預覽用的背景色 */
     body.preview-mode { background-color: #525659; }
 
-    /* A4 排版 (繼承支出證明單排版規律) */
+    /* A4 排版 */
     .page-a4 {
       background: white; width: 198mm; height: 287mm; margin: 0 auto 30px auto; padding: 4mm 3mm;
       box-sizing: border-box; border: 1px solid #ccc; display: none; flex-direction: column; justify-content: space-between;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5); /* 預覽時的陰影 */
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
     .voucher-box { height: 137mm; box-sizing: border-box; position: relative; padding-top: 2px; }
     .header-container { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 3px; }
@@ -79,41 +78,23 @@
     .meta-table .val-line { border-bottom: 1px solid #000; text-align: center; }
 
     table.grid-table { width: 100%; border-collapse: collapse; border: 1.5px solid #000; font-size: 12px; }
-    table.grid-table th, table.grid-table td { border: 1px solid #000; padding: 5px 3px; box-sizing: border-box; }
+    table.grid-table th, table.grid-table td { border: 1px solid #000; padding: 1px 3px; box-sizing: border-box; }
     .cell-top-left { vertical-align: top; text-align: left; padding: 3px !important; }
     .cut-line { border-top: 1px dashed #cccccc; text-align: center; font-size: 10px; color: #bbbbbb; height: 4mm; line-height: 4mm; }
 
-/* 列印時的樣式：隱藏多餘 UI，去除背景與陰影，並消除網址與頁碼 */
     @media print {
-      @page {
-        size: A4 portrait;
-        margin: 0; /* 關鍵：設定為 0 會強制瀏覽器不印出預設的頁首(日期)與頁尾(網址) */
-      }
-      body { 
-        background: white !important; 
-        margin: 0 !important; 
-        padding: 0 !important; 
-      }
-      .no-print, .preview-toolbar { 
-        display: none !important; 
-      }
+      @page { size: A4 portrait; margin: 0; }
+      body { background: white !important; padding: 0 !important; margin: 0 !important; }
+      .no-print, .preview-toolbar { display: none !important; }
       .page-a4 { 
-        border: none !important; 
-        box-shadow: none !important; 
-        margin: 0 auto !important; 
-        /* 因為 @page 設為 0，我們改用 padding 來推開安全邊界，避免內容貼齊紙張邊緣 */
-        padding: 8mm 6mm !important;
-        width: 210mm !important;  /* 填滿標準 A4 寬度 */
-        height: 297mm !important; /* 填滿標準 A4 高度 */
-        page-break-after: avoid !important; 
-        display: flex !important;
+        border: none !important; box-shadow: none !important; margin: 0 auto !important; padding: 8mm 6mm !important;
+        width: 210mm !important; height: 297mm !important; page-break-after: avoid !important; display: flex !important;
       }
     }
   </style>
 </head>
 <body>
 
-<!-- 預覽模式的上方工具列 -->
 <div class="preview-toolbar" id="preview-toolbar">
   <button class="btn-back" onclick="backToEdit()">⬅️ 返回編輯修改</button>
   <button class="btn-print-final" onclick="window.print()">🖨️ 確認無誤，列印 / 儲存為 PDF</button>
@@ -133,12 +114,10 @@
 
   <div class="action-bar">
     <button class="btn-action" onclick="copyTab1ToTab2()">📋 複製「單據一」至「單據二」</button>
-    <!-- 改為「生成並預覽」，不會直接下載 -->
     <button class="btn-submit" onclick="previewA4()">👁️ 生成並預覽 A4 雙聯單</button>
   </div>
 </div>
 
-<!-- A4 雙聯單列印預覽區域 -->
 <div id="print-area" class="page-a4">
   <div id="voucher-1" class="voucher-box"></div>
   <div class="cut-line">剪 裁 線</div>
@@ -146,7 +125,6 @@
 </div>
 
 <script>
-// 部門與代號對照表
 const DEPT_MAP = {
   "台中推廣課": "632011",
   "中慈_種樹": "632014",
@@ -176,13 +154,12 @@ function renderForm(id) {
   const container = document.getElementById(`tab-${id}`);
   let itemRowsHtml = '';
   for(let i = 1; i <= 6; i++) {
-    let optionsHtml = SUMMARY_OPTIONS.map(opt => `<option value="${opt}">${opt}</option>`).join('');
+    let optionsHtml = SUMMARY_OPTIONS.map(opt => `<option value="${opt}">${opt || '-- 請選擇 --'}</option>`).join('');
     itemRowsHtml += `
       <tr>
         <td>#${i}</td>
         <td>
-          <input type="text" list="summary-list-${id}-${i}" id="summ_${id}_${i}" placeholder="可打字或下拉選擇">
-          <datalist id="summary-list-${id}-${i}">${optionsHtml}</datalist>
+          <select id="summ_${id}_${i}">${optionsHtml}</select>
         </td>
         <td><input type="number" id="amt_${id}_${i}" oninput="calculateTotal(${id})"></td>
       </tr>
@@ -208,6 +185,10 @@ function renderForm(id) {
       </div>
     </div>
     <div class="row">
+      <div class="col" style="flex: 1.5;">
+        <label>📅 月曆點擊選取 (手機推薦)</label>
+        <input type="date" id="datepicker_${id}" onchange="onDatePick(${id})">
+      </div>
       <div class="col">
         <label>民國年</label>
         <input type="text" id="year_${id}">
@@ -260,18 +241,27 @@ function renderForm(id) {
   `;
 }
 
+function onDatePick(id) {
+  const pickerVal = document.getElementById(`datepicker_${id}`).value;
+  if (!pickerVal) return;
+  const d = new Date(pickerVal);
+  if (!isNaN(d.getTime())) {
+    document.getElementById(`year_${id}`).value = d.getFullYear() - 1911;
+    document.getElementById(`month_${id}`).value = d.getMonth() + 1;
+    document.getElementById(`day_${id}`).value = d.getDate();
+  }
+}
+
 function initDefaultDates() {
   const today = new Date();
   const rocYear = today.getFullYear() - 1911;
   const month = today.getMonth() + 1;
   const date = today.getDate();
 
-  // 單據一（上半頁）：自動帶入今天日期
   document.getElementById('year_1').value = rocYear;
   document.getElementById('month_1').value = month;
   document.getElementById('day_1').value = date;
 
-  // 單據二（下半頁）：預設保持空白
   document.getElementById('year_2').value = "";
   document.getElementById('month_2').value = "";
   document.getElementById('day_2').value = "";
@@ -329,6 +319,7 @@ function copyTab1ToTab2() {
   document.getElementById('year_2').value = document.getElementById('year_1').value;
   document.getElementById('month_2').value = document.getElementById('month_1').value;
   document.getElementById('day_2').value = document.getElementById('day_1').value;
+  document.getElementById('datepicker_2').value = document.getElementById('datepicker_1').value;
 
   for (let i = 1; i <= 6; i++) {
     document.getElementById(`summ_2_${i}`).value = document.getElementById(`summ_1_${i}`).value;
@@ -357,9 +348,9 @@ function getFormData(id) {
     region: document.getElementById(`region_${id}`).value,
     deptName: document.getElementById(`dept_name_${id}`).value,
     deptCode: document.getElementById(`dept_code_${id}`).value,
-    year: document.getElementById(`year_${id}`).value,
-    month: document.getElementById(`month_${id}`).value,
-    day: document.getElementById(`day_${id}`).value,
+    year: document.getElementById(`year_${id}`).value.trim(),
+    month: document.getElementById(`month_${id}`).value.trim(),
+    day: document.getElementById(`day_${id}`).value.trim(),
     purpose: document.getElementById(`purpose_${id}`).value,
     remark: document.getElementById(`remark_${id}`).value,
     payType: document.querySelector(`input[name="pay_${id}"]:checked`).value,
@@ -376,13 +367,17 @@ function buildVoucherHtml(data) {
   const chk4 = data.payType === "沖" ? "■" : "□";
   const fmtAmt = (val) => val ? val.toLocaleString() : "";
 
+  const yearStr = data.year ? `<b>${data.year}</b>` : `&nbsp;&nbsp;&nbsp;&nbsp;`;
+  const monthStr = data.month ? `<b>${data.month}</b>` : `&nbsp;&nbsp;`;
+  const dayStr = data.day ? `<b>${data.day}</b>` : `&nbsp;&nbsp;`;
+
   return `
     <div class="header-container">
       <div class="header-left">
         <div class="title-fund">財團法人慈心有機農業發展基金會</div>
         <div class="title-doc">支 出 證 明 單</div>
         <div class="title-date-row">
-          <div class="date-text"><b>${data.year}</b> 年 <b>${data.month}</b> 月 <b>${data.day}</b> 日</div>
+          <div class="date-text">${yearStr} 年 ${monthStr} 月 ${dayStr} 日</div>
           <div class="voucher-text">傳票NO.</div>
         </div>
       </div>
@@ -405,7 +400,6 @@ function buildVoucherHtml(data) {
         </tr>
       </thead>
       <tbody>
-        <!-- 統一在 tr 設定 height，並用 (summ || '&nbsp;') 確保沒字時也能維持 15px 行高 -->
         <tr style="height: 35px;">
           <td>&nbsp;</td>
           <td style="text-align:left; font-size:15px;">${data.items[0].summ || '&nbsp;'}</td>
@@ -442,12 +436,11 @@ function buildVoucherHtml(data) {
           <td style="text-align:right; font-size:15px;">${fmtAmt(data.items[5].amt) || '&nbsp;'}</td>
           <td colspan="4" style="text-align:left; font-size:11px;"><b>◎注意事項</b></td>
         </tr>
-        <!-- 將 height 高度寫在 <tr> 標籤上 (例如改為 40px 或更大) -->
         <tr style="height: 40px;">
-          <td style="text-align:center; font-weight:bold; font-size:15px;">合 計</td>
-          <td></td>
-          <td style="text-align:right; font-weight:bold; font-size:15px;">${data.total ? data.total.toLocaleString() : ''}</td>
-          <td colspan="4" style="text-align:left; font-size:11px;">費用單據請先核對法人名稱、統一編號、金額無誤後報銷。</td>
+          <td style="text-align:center; font-weight:bold; font-size:15px; vertical-align:middle;">合 計</td>
+          <td style="vertical-align:middle;">&nbsp;</td>
+          <td style="text-align:right; font-weight:bold; font-size:15px; vertical-align:middle;">${data.total ? data.total.toLocaleString() : ''}</td>
+          <td colspan="4" style="text-align:left; font-size:11px; vertical-align:middle; line-height:1.3;">費用單據請先核對法人名稱、統一編號、金額無誤後報銷。</td>
         </tr>
         <tr>
           <td style="text-align:center; vertical-align:top; height:80px;">核準</td>
@@ -465,23 +458,18 @@ function buildVoucherHtml(data) {
   `;
 }
 
-// 產生內容並切換到「預覽模式」
 function previewA4() {
-  // 將兩份單據的資料渲染進 A4 容器
   document.getElementById('voucher-1').innerHTML = buildVoucherHtml(getFormData(1));
   document.getElementById('voucher-2').innerHTML = buildVoucherHtml(getFormData(2));
 
-  // 隱藏表單區，顯示上方工具列與 A4 紙張
   document.getElementById('form-container').style.display = 'none';
   document.getElementById('preview-toolbar').style.display = 'block';
   document.getElementById('print-area').style.display = 'flex';
   
-  // 改變網頁背景色，呈現 PDF 檢視器質感
   document.body.classList.add('preview-mode');
   window.scrollTo(0, 0);
 }
 
-// 從「預覽模式」返回編輯
 function backToEdit() {
   document.getElementById('form-container').style.display = 'block';
   document.getElementById('preview-toolbar').style.display = 'none';
