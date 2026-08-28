@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>財務系統-支出證明單_中慈版本</title>
-  <!-- 引入 html2pdf.js 庫 (直接轉檔下載 PDF) -->
+  <!-- 引入 html2pdf.js 庫 (用於直接轉檔下載 PDF) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <!-- 引入線上楷體 (Web Font)，作爲無內建標楷體裝置的備援字體 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -77,7 +77,7 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.3);
       margin: -12px -12px 20px -12px;
     }
-    .preview-toolbar button { border: none; padding: 12px 20px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; margin: 0 6px; }
+    .preview-toolbar button { border: none; padding: 12px 18px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; margin: 0 5px; }
     .btn-back { background: #f8f9fa; color: #343a40; }
     .btn-print-final { background: #28a745; color: #fff; }
 
@@ -163,8 +163,8 @@
 
 <div class="preview-toolbar" id="preview-toolbar">
   <button class="btn-back" onclick="backToEdit()">⬅️ 返回編輯修改</button>
-  <button class="btn-print-final" id="btn-save-pdf" onclick="downloadPDF()">📄 確認無誤，直接存成 PDF 檔</button>
-  <button class="btn-back" onclick="window.print()">🖨️ 列印預覽</button>
+  <button class="btn-print-final" id="btn-save-pdf" onclick="downloadPDF()">📄 儲存為 PDF 檔</button>
+  <button class="btn-back" onclick="window.print()">🖨️ 系統列印 / 預覽</button>
 </div>
 
 <!-- 表單填寫區塊 -->
@@ -553,7 +553,7 @@ function backToEdit() {
   document.body.classList.remove('preview-mode');
 }
 
-// 直接產生 PDF 檔並下載
+// 根據報帳日期產出檔名 YYYYMMDD_支出證明單.pdf 並下載
 function downloadPDF() {
   const dateVal = document.getElementById('datepicker_1').value;
   let dateStr = "";
@@ -570,10 +570,12 @@ function downloadPDF() {
 
   const element = document.getElementById('print-area');
   const btn = document.getElementById('btn-save-pdf');
-  const originalText = btn.innerText;
+  const originalText = btn ? btn.innerText : "";
   
-  btn.innerText = "⏳ 正在產生 PDF 中...";
-  btn.disabled = true;
+  if (btn) {
+    btn.innerText = "⏳ 正在產生 PDF 中...";
+    btn.disabled = true;
+  }
 
   const opt = {
     margin: 0,
@@ -590,12 +592,16 @@ function downloadPDF() {
   };
 
   html2pdf().set(opt).from(element).save().then(() => {
-    btn.innerText = originalText;
-    btn.disabled = false;
+    if (btn) {
+      btn.innerText = originalText;
+      btn.disabled = false;
+    }
   }).catch(err => {
     alert('PDF 產生失敗，請重試或使用列印功能。');
-    btn.innerText = originalText;
-    btn.disabled = false;
+    if (btn) {
+      btn.innerText = originalText;
+      btn.disabled = false;
+    }
   });
 }
 </script>
