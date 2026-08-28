@@ -89,20 +89,19 @@
     }
 
     .page-a4 {
-      background: white; 
-      width: 195mm; 
-      max-width: 100%; 
-      height: 280mm; 
-      margin: 0 auto 30px auto; 
-      padding: 4mm 3mm;
+      background: #ffffff !important; 
+      width: 210mm; 
+      height: 297mm; 
+      margin: 20px auto; 
+      padding: 8mm 7mm;
       box-sizing: border-box; 
-      border: 1px solid #ccc; 
+      border: none !important; 
+      box-shadow: none !important;
       display: none; 
       flex-direction: column; 
       justify-content: space-between;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
     }
-    .voucher-box { height: 130mm; box-sizing: border-box; position: relative; padding-top: 2px; overflow: hidden; }
+    .voucher-box { height: 134mm; box-sizing: border-box; position: relative; padding-top: 2px; overflow: hidden; }
 
     /* 表格強制固定比例 */
     table.grid-table { 
@@ -123,8 +122,8 @@
         margin: 0mm; 
       }
       html, body { 
-        width: 100% !important; 
-        height: 100% !important; 
+        width: 210mm !important; 
+        height: 297mm !important; 
         margin: 0 !important; 
         padding: 0 !important; 
         background: #ffffff !important; 
@@ -139,11 +138,9 @@
         border: none !important; 
         box-shadow: none !important; 
         margin: 0 auto !important; 
-        padding: 4mm 5mm !important; 
-        width: 195mm !important; 
-        max-width: 100% !important;
-        height: 278mm !important; 
-        max-height: 278mm !important;
+        padding: 8mm 7mm !important; 
+        width: 210mm !important; 
+        height: 297mm !important; 
         background: #ffffff !important; 
         display: block !important; 
         box-sizing: border-box !important;
@@ -152,7 +149,7 @@
         break-after: avoid !important;
       }
       .voucher-box {
-        height: 130mm !important; 
+        height: 134mm !important; 
         overflow: hidden !important;
         display: block !important;
       }
@@ -553,7 +550,7 @@ function backToEdit() {
   document.body.classList.remove('preview-mode');
 }
 
-// 根據報帳日期產出檔名 YYYYMMDD_支出證明單.pdf 並下載
+// 根據報帳日期產出高畫質 PDF 檔並下載
 function downloadPDF() {
   const dateVal = document.getElementById('datepicker_1').value;
   let dateStr = "";
@@ -573,20 +570,22 @@ function downloadPDF() {
   const originalText = btn ? btn.innerText : "";
   
   if (btn) {
-    btn.innerText = "⏳ 正在產生 PDF 中...";
+    btn.innerText = "⏳ 正在產生高解析度 PDF 中...";
     btn.disabled = true;
   }
 
+  // 設定高倍率與最高畫質參數
   const opt = {
     margin: 0,
     filename: filename,
-    image: { type: 'jpeg', quality: 0.98 },
+    image: { type: 'jpeg', quality: 1.0 },
     html2canvas: { 
-      scale: 2, 
+      scale: 3,             // 倍率提高至 3 倍，提升高解析度細緻度
       useCORS: true, 
       logging: false,
       scrollX: 0,
-      scrollY: 0
+      scrollY: 0,
+      windowWidth: 794      // 強制與 A4 寬度 (210mm) 一致
     },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
