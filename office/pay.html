@@ -88,7 +88,7 @@
       font-family: "標楷體", "DFKai-SB", "BiauKai", "LXGW WenKai TC", "Kaiti TC", "KaiTi", serif !important;
     }
 
-    /* 精確標準 A4 尺寸 (210mm x 296mm)，消除邊框與溢出頁 */
+    /* 精確標準 A4 尺寸 (210mm x 296mm)，消除邊框與陰影 */
     .page-a4 {
       background: #ffffff !important; 
       width: 210mm; 
@@ -551,7 +551,7 @@ function backToEdit() {
   document.body.classList.remove('preview-mode');
 }
 
-// 根據報帳日期產出高畫質、單頁滿版且精準置中的 PDF 檔
+// 根據報帳日期產出高畫質、單頁滿版且精準置中的 PDF 檔 (採用離屏克隆，徹底防範手機寬度限制裁切)
 function downloadPDF() {
   const dateVal = document.getElementById('datepicker_1').value;
   let dateStr = "";
@@ -566,7 +566,7 @@ function downloadPDF() {
   }
   const filename = `${dateStr}_支出證明單.pdf`;
 
-  const element = document.getElementById('print-area');
+  const originalElement = document.getElementById('print-area');
   const btn = document.getElementById('btn-save-pdf');
   const originalText = btn ? btn.innerText : "";
   
@@ -575,11 +575,18 @@ function downloadPDF() {
     btn.disabled = true;
   }
 
-  // 暫存原寬度，強制設定畫布寬度以解決手機 Viewport 裁切問題
-  const origWidth = element.style.width;
-  const origMaxW = element.style.maxWidth;
-  element.style.width = '210mm';
-  element.style.maxWidth = 'none';
+  // 複製一份不受手機螢幕 Viewport 擠壓的 DOM 容器，定寬 794px（剛好對應 A4 標準寬度）
+  const clone = originalElement.cloneNode(true);
+  clone.style.display = 'block';
+  clone.style.position = 'fixed';
+  clone.style.left = '-9999px';
+  clone.style.top = '0';
+  clone.style.width = '794px';
+  clone.style.height = '1123px';
+  clone.style.padding = '22px 28px';
+  clone.style.boxSizing = 'border-box';
+  clone.style.background = '#ffffff';
+  document.body.appendChild(clone);
 
   const opt = {
     margin: 0,
@@ -591,24 +598,23 @@ function downloadPDF() {
       logging: false,
       scrollX: 0,
       scrollY: 0,
-      windowWidth: 1024,   // 鎖定虛擬寬螢幕環境，徹底消除手機視埠造成的截字
-      x: 0,
-      y: 0
+      width: 794,
+      height: 1123,
+      windowWidth: 794      // 畫面寬度鎖定，防止手機抓取錯位
     },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   };
 
-  html2pdf().set(opt).from(element).save().then(() => {
-    element.style.width = origWidth;
-    element.style.maxWidth = origMaxW;
+  html2pdf().set(opt).from(clone).save().then(() => {
+    document.body.removeChild(clone);
     if (btn) {
       btn.innerText = originalText;
       btn.disabled = false;
     }
   }).catch(err => {
-    element.style.width = origWidth;
-    element.style.maxWidth = origMaxW;
+    if (document.body.contains(clone)) {
+      document.body.removeChild(clone);
+    }
     alert('PDF 產生失敗，請重試或使用列印功能。');
     if (btn) {
       btn.innerText = originalText;
