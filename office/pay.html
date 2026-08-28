@@ -4,7 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>財務系統-支出證明單_中慈版本</title>
-  <!-- 引入線上楷體 (Web Font)，解決手機/平板無內建標楷體問題 -->
+  <!-- 引入 html2pdf.js 庫 (直接轉檔下載 PDF) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <!-- 引入線上楷體 (Web Font)，作爲無內建標楷體裝置的備援字體 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap" rel="stylesheet">
@@ -75,15 +77,15 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.3);
       margin: -12px -12px 20px -12px;
     }
-    .preview-toolbar button { border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; margin: 0 10px; }
+    .preview-toolbar button { border: none; padding: 12px 20px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; margin: 0 6px; }
     .btn-back { background: #f8f9fa; color: #343a40; }
     .btn-print-final { background: #28a745; color: #fff; }
 
     body.preview-mode { background-color: #525659; }
 
-    /* 2. 輸出單據 (A4 雙聯單)：全數套用 BiauKai (標楷體) */
+    /* 2. 輸出單據 (A4 雙聯單)：電腦版優先使用原生「標楷體」 */
     .page-a4, .page-a4 * {
-      font-family: "LXGW WenKai TC", "BiauKai", "標楷體", "DFKai-SB", "Kaiti TC", "KaiTi", serif !important;
+      font-family: "標楷體", "DFKai-SB", "BiauKai", "LXGW WenKai TC", "Kaiti TC", "KaiTi", serif !important;
     }
 
     .page-a4 {
@@ -161,7 +163,8 @@
 
 <div class="preview-toolbar" id="preview-toolbar">
   <button class="btn-back" onclick="backToEdit()">⬅️ 返回編輯修改</button>
-  <button class="btn-print-final" onclick="window.print()">🖨️ 確認無誤，列印 / 儲存為 PDF</button>
+  <button class="btn-print-final" id="btn-save-pdf" onclick="downloadPDF()">📄 確認無誤，直接存成 PDF 檔</button>
+  <button class="btn-back" onclick="window.print()">🖨️ 列印預覽</button>
 </div>
 
 <!-- 表單填寫區塊 -->
@@ -408,7 +411,6 @@ function getFormData(id) {
   };
 }
 
-// 抬頭日期已定位於「支出證明單」正下方置中對齊
 function buildVoucherHtml(data) {
   const chineseTotal = getChineseAmount(data.total);
   const chk1 = data.payType === "款付本人" ? "■" : "□";
@@ -422,7 +424,6 @@ function buildVoucherHtml(data) {
   const dayStr = data.day ? `<b>${data.day}</b>` : `&nbsp;&nbsp;`;
 
   return `
-    <!-- 純 Table 架構抬頭：將日期於支出證明單正下方置中對齊 -->
     <table style="width:100%; border-collapse:collapse; border:none; margin-bottom:4px; table-layout:fixed;">
       <tr>
         <td style="width:58%; vertical-align:bottom; border:none; padding:0;">
@@ -456,7 +457,6 @@ function buildVoucherHtml(data) {
       </tr>
     </table>
 
-    <!-- 主表格 -->
     <table class="grid-table">
       <colgroup>
         <col style="width: 11%;">
@@ -551,6 +551,52 @@ function backToEdit() {
   document.getElementById('preview-toolbar').style.display = 'none';
   document.getElementById('print-area').style.display = 'none';
   document.body.classList.remove('preview-mode');
+}
+
+// 直接產生 PDF 檔並下載
+function downloadPDF() {
+  const dateVal = document.getElementById('datepicker_1').value;
+  let dateStr = "";
+  if (dateVal) {
+    dateStr = dateVal.replace(/-/g, '');
+  } else {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    dateStr = `${y}${m}${d}`;
+  }
+  const filename = `${dateStr}_支出證明單.pdf`;
+
+  const element = document.getElementById('print-area');
+  const btn = document.getElementById('btn-save-pdf');
+  const originalText = btn.innerText;
+  
+  btn.innerText = "⏳ 正在產生 PDF 中...";
+  btn.disabled = true;
+
+  const opt = {
+    margin: 0,
+    filename: filename,
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { 
+      scale: 2, 
+      useCORS: true, 
+      logging: false,
+      scrollX: 0,
+      scrollY: 0
+    },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  };
+
+  html2pdf().set(opt).from(element).save().then(() => {
+    btn.innerText = originalText;
+    btn.disabled = false;
+  }).catch(err => {
+    alert('PDF 產生失敗，請重試或使用列印功能。');
+    btn.innerText = originalText;
+    btn.disabled = false;
+  });
 }
 </script>
 </body>
