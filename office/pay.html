@@ -88,12 +88,13 @@
       font-family: "標楷體", "DFKai-SB", "BiauKai", "LXGW WenKai TC", "Kaiti TC", "KaiTi", serif !important;
     }
 
+    /* 精確標準 A4 尺寸 (210mm x 296mm)，消除邊框與溢出頁 */
     .page-a4 {
       background: #ffffff !important; 
       width: 210mm; 
-      height: 297mm; 
-      margin: 20px auto; 
-      padding: 8mm 7mm;
+      height: 296mm; 
+      margin: 0 auto; 
+      padding: 6mm 8mm;
       box-sizing: border-box; 
       border: none !important; 
       box-shadow: none !important;
@@ -113,7 +114,7 @@
     }
     table.grid-table th, table.grid-table td { border: 1px solid #000; padding: 1px 3px; box-sizing: border-box; }
     .cell-top-left { vertical-align: top; text-align: left; padding: 3px !important; }
-    .cut-line { border-top: 1px dashed #cccccc; text-align: center; font-size: 10px; color: #bbbbbb; height: 6mm; line-height: 6mm; margin: 2mm 0; }
+    .cut-line { border-top: 1px dashed #cccccc; text-align: center; font-size: 10px; color: #bbbbbb; height: 6mm; line-height: 6mm; margin: 1mm 0; }
 
     /* 列印與 PDF 輸出樣式 */
     @media print {
@@ -138,9 +139,9 @@
         border: none !important; 
         box-shadow: none !important; 
         margin: 0 auto !important; 
-        padding: 8mm 7mm !important; 
+        padding: 6mm 8mm !important; 
         width: 210mm !important; 
-        height: 297mm !important; 
+        height: 296mm !important; 
         background: #ffffff !important; 
         display: block !important; 
         box-sizing: border-box !important;
@@ -550,7 +551,7 @@ function backToEdit() {
   document.body.classList.remove('preview-mode');
 }
 
-// 根據報帳日期產出高畫質 PDF 檔並下載
+// 根據報帳日期產出高畫質、單頁滿版且精準置中的 PDF 檔
 function downloadPDF() {
   const dateVal = document.getElementById('datepicker_1').value;
   let dateStr = "";
@@ -570,32 +571,44 @@ function downloadPDF() {
   const originalText = btn ? btn.innerText : "";
   
   if (btn) {
-    btn.innerText = "⏳ 正在產生高解析度 PDF 中...";
+    btn.innerText = "⏳ 正在產生 PDF 中...";
     btn.disabled = true;
   }
 
-  // 設定高倍率與最高畫質參數
+  // 暫存原寬度，強制設定畫布寬度以解決手機 Viewport 裁切問題
+  const origWidth = element.style.width;
+  const origMaxW = element.style.maxWidth;
+  element.style.width = '210mm';
+  element.style.maxWidth = 'none';
+
   const opt = {
     margin: 0,
     filename: filename,
     image: { type: 'jpeg', quality: 1.0 },
     html2canvas: { 
-      scale: 3,             // 倍率提高至 3 倍，提升高解析度細緻度
+      scale: 3,             // 3 倍高清縮放
       useCORS: true, 
       logging: false,
       scrollX: 0,
       scrollY: 0,
-      windowWidth: 794      // 強制與 A4 寬度 (210mm) 一致
+      windowWidth: 1024,   // 鎖定虛擬寬螢幕環境，徹底消除手機視埠造成的截字
+      x: 0,
+      y: 0
     },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
   };
 
   html2pdf().set(opt).from(element).save().then(() => {
+    element.style.width = origWidth;
+    element.style.maxWidth = origMaxW;
     if (btn) {
       btn.innerText = originalText;
       btn.disabled = false;
     }
   }).catch(err => {
+    element.style.width = origWidth;
+    element.style.maxWidth = origMaxW;
     alert('PDF 產生失敗，請重試或使用列印功能。');
     if (btn) {
       btn.innerText = originalText;
