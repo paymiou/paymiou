@@ -551,8 +551,8 @@ function backToEdit() {
   document.body.classList.remove('preview-mode');
 }
 
-// 根據報帳日期產出高畫質、單頁滿版且精準置中的 PDF 檔 (採用離屏克隆，徹底防範手機寬度限制裁切)
-function downloadPDF() {
+// 直接在當前 DOM 上設置標準 A4 樣式進行轉檔，徹底解決全白、裁切與溢出問題
+async function downloadPDF() {
   const dateVal = document.getElementById('datepicker_1').value;
   let dateStr = "";
   if (dateVal) {
@@ -566,7 +566,7 @@ function downloadPDF() {
   }
   const filename = `${dateStr}_支出證明單.pdf`;
 
-  const originalElement = document.getElementById('print-area');
+  const element = document.getElementById('print-area');
   const btn = document.getElementById('btn-save-pdf');
   const originalText = btn ? btn.innerText : "";
   
@@ -575,52 +575,55 @@ function downloadPDF() {
     btn.disabled = true;
   }
 
-  // 複製一份不受手機螢幕 Viewport 擠壓的 DOM 容器，定寬 794px（剛好對應 A4 標準寬度）
-  const clone = originalElement.cloneNode(true);
-  clone.style.display = 'block';
-  clone.style.position = 'fixed';
-  clone.style.left = '-9999px';
-  clone.style.top = '0';
-  clone.style.width = '794px';
-  clone.style.height = '1123px';
-  clone.style.padding = '22px 28px';
-  clone.style.boxSizing = 'border-box';
-  clone.style.background = '#ffffff';
-  document.body.appendChild(clone);
+  // 1. 移至頂部防止捲動偏移導致畫面繪製空白
+  window.scrollTo(0, 0);
+
+  // 2. 等待 WebFont 渲染完全
+  if (document.fonts) {
+    await document.fonts.ready;
+  }
+
+  // 3. 暫存原 CSS 並套用標準 A4 畫布樣式
+  const savedCss = element.style.cssText;
+  element.style.cssText = `
+    display: block !important;
+    width: 210mm !important;
+    height: 296mm !important;
+    margin: 0 auto !important;
+    padding: 6mm 8mm !important;
+    background: #ffffff !important;
+    box-sizing: border-box !important;
+  `;
 
   const opt = {
     margin: 0,
     filename: filename,
-    image: { type: 'jpeg', quality: 1.0 },
+    image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { 
-      scale: 3,             // 3 倍高清縮放
+      scale: 2,             // 2 倍高解析，防止超過手機畫布上限產生空白
       useCORS: true, 
       logging: false,
       scrollX: 0,
       scrollY: 0,
-      width: 794,
-      height: 1123,
-      windowWidth: 794      // 畫面寬度鎖定，防止手機抓取錯位
+      windowWidth: 1024
     },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+    pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
   };
 
-  html2pdf().set(opt).from(clone).save().then(() => {
-    document.body.removeChild(clone);
+  try {
+    await html2pdf().set(opt).from(element).save();
+  } catch (err) {
+    alert('PDF 產生失敗，請重試或使用系統列印功能。');
+  } finally {
+    // 恢復原預覽樣式
+    element.style.cssText = savedCss;
+    element.style.display = 'block';
     if (btn) {
       btn.innerText = originalText;
       btn.disabled = false;
     }
-  }).catch(err => {
-    if (document.body.contains(clone)) {
-      document.body.removeChild(clone);
-    }
-    alert('PDF 產生失敗，請重試或使用列印功能。');
-    if (btn) {
-      btn.innerText = originalText;
-      btn.disabled = false;
-    }
-  });
+  }
 }
 </script>
 </body>
