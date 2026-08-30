@@ -88,13 +88,14 @@
       font-family: "標楷體", "DFKai-SB", "BiauKai", "LXGW WenKai TC", "Kaiti TC", "KaiTi", serif !important;
     }
 
-    /* 精確標準 A4 尺寸 (210mm x 296mm)，消除邊框與陰影 */
+    /* 精確標準 A4 尺寸 (210mm x 296mm)，消除邊框與灰邊 */
     .page-a4 {
       background: #ffffff !important; 
-      width: 210mm; 
-      height: 296mm; 
+      width: 195mm; 
+      max-width: 100%;
+      height: 285mm; 
       margin: 0 auto; 
-      padding: 6mm 8mm;
+      padding: 2mm 0;
       box-sizing: border-box; 
       border: none !important; 
       box-shadow: none !important;
@@ -551,7 +552,7 @@ function backToEdit() {
   document.body.classList.remove('preview-mode');
 }
 
-// 直接在當前 DOM 上設置標準 A4 樣式進行轉檔，徹底解決全白、裁切與溢出問題
+// 根據報帳日期產出高畫質、單頁滿版且精準置中的 PDF 檔 (採用切換 Viewport 寬度，徹底防範手機 Viewport 截字)
 async function downloadPDF() {
   const dateVal = document.getElementById('datepicker_1').value;
   let dateStr = "";
@@ -575,32 +576,36 @@ async function downloadPDF() {
     btn.disabled = true;
   }
 
-  // 1. 移至頂部防止捲動偏移導致畫面繪製空白
   window.scrollTo(0, 0);
 
-  // 2. 等待 WebFont 渲染完全
   if (document.fonts) {
     await document.fonts.ready;
   }
 
-  // 3. 暫存原 CSS 並套用標準 A4 畫布樣式
-  const savedCss = element.style.cssText;
+  // 1. 切換 Viewport 讓手機擬真電腦 1024px 寬度，避免 Mobile Viewport 壓擠裁切右側
+  const viewportMeta = document.querySelector('meta[name="viewport"]');
+  const originalViewport = viewportMeta ? viewportMeta.getAttribute('content') : '';
+  if (viewportMeta) {
+    viewportMeta.setAttribute('content', 'width=1024, initial-scale=1.0');
+  }
+
+  // 2. 設定列印畫布暫減至 195mm，並給予 [4, 7.5, 4, 7.5] mm 自動在 A4 上水平/垂直滿版置中
+  const originalStyle = element.style.cssText;
   element.style.cssText = `
     display: block !important;
-    width: 210mm !important;
-    height: 296mm !important;
+    width: 195mm !important;
     margin: 0 auto !important;
-    padding: 6mm 8mm !important;
+    padding: 2mm 0 !important;
     background: #ffffff !important;
     box-sizing: border-box !important;
   `;
 
   const opt = {
-    margin: 0,
+    margin: [4, 7.5, 4, 7.5], // 上, 左, 下, 右 (mm) -> jsPDF 會自動把 195mm 置中於 210mm A4 紙張上！
     filename: filename,
     image: { type: 'jpeg', quality: 0.98 },
     html2canvas: { 
-      scale: 2,             // 2 倍高解析，防止超過手機畫布上限產生空白
+      scale: 2, 
       useCORS: true, 
       logging: false,
       scrollX: 0,
@@ -616,8 +621,11 @@ async function downloadPDF() {
   } catch (err) {
     alert('PDF 產生失敗，請重試或使用系統列印功能。');
   } finally {
-    // 恢復原預覽樣式
-    element.style.cssText = savedCss;
+    // 還原 Viewport 與樣式
+    if (viewportMeta && originalViewport) {
+      viewportMeta.setAttribute('content', originalViewport);
+    }
+    element.style.cssText = originalStyle;
     element.style.display = 'block';
     if (btn) {
       btn.innerText = originalText;
