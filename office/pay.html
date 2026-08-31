@@ -4,8 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>財務系統-支出證明單_中慈版本</title>
-  <!-- 引入 html2pdf.js 庫 (用於直接轉檔下載 PDF) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <!-- 引入線上楷體 (Web Font)，作爲無內建標楷體裝置的備援字體 -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -77,7 +75,7 @@
       box-shadow: 0 4px 10px rgba(0,0,0,0.3);
       margin: -12px -12px 20px -12px;
     }
-    .preview-toolbar button { border: none; padding: 12px 18px; font-size: 15px; font-weight: bold; border-radius: 6px; cursor: pointer; margin: 0 5px; }
+    .preview-toolbar button { border: none; padding: 12px 24px; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; margin: 0 8px; }
     .btn-back { background: #f8f9fa; color: #343a40; }
     .btn-print-final { background: #28a745; color: #fff; }
 
@@ -180,8 +178,7 @@
 
 <div class="preview-toolbar" id="preview-toolbar">
   <button class="btn-back" onclick="backToEdit()">⬅️ 返回編輯修改</button>
-  <button class="btn-print-final" id="btn-save-pdf" onclick="downloadPDF()">📄 儲存為 PDF 檔</button>
-  <button class="btn-back" onclick="window.print()">🖨️ 系統列印 / 預覽</button>
+  <button class="btn-print-final" onclick="window.print()">🖨️ 確認無誤，列印 / 儲存為 PDF</button>
 </div>
 
 <!-- 表單填寫區塊 -->
@@ -570,85 +567,6 @@ function backToEdit() {
   document.getElementById('preview-toolbar').style.display = 'none';
   document.getElementById('preview-wrapper').style.display = 'none';
   document.body.classList.remove('preview-mode');
-}
-
-// 建立獨立標準 DOM 進行 PDF 轉檔，徹底解決裁切與置中問題
-async function downloadPDF() {
-  const dateVal = document.getElementById('datepicker_1').value;
-  let dateStr = "";
-  if (dateVal) {
-    dateStr = dateVal.replace(/-/g, '');
-  } else {
-    const now = new Date();
-    const y = now.getFullYear();
-    const m = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    dateStr = `${y}${m}${d}`;
-  }
-  const filename = `${dateStr}_支出證明單.pdf`;
-
-  const btn = document.getElementById('btn-save-pdf');
-  const originalText = btn ? btn.innerText : "";
-  if (btn) {
-    btn.innerText = "⏳ 正在產生 PDF 中...";
-    btn.disabled = true;
-  }
-
-  // 1. 建立獨立完美的 PDF 轉檔專用容器 (完全避開螢幕縮放/Flex/邊距偏移)
-  const pdfContainer = document.createElement('div');
-  pdfContainer.style.cssText = `
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 794px;
-    height: 1123px;
-    padding: 25px 32px;
-    background: #ffffff;
-    box-sizing: border-box;
-    z-index: -9999;
-    opacity: 0;
-    pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    font-family: "標楷體", "DFKai-SB", "BiauKai", "LXGW WenKai TC", serif !important;
-  `;
-  pdfContainer.innerHTML = document.getElementById('print-area').innerHTML;
-  document.body.appendChild(pdfContainer);
-
-  if (document.fonts) {
-    await document.fonts.ready;
-  }
-
-  const opt = {
-    margin: 0,
-    filename: filename,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { 
-      scale: 2,
-      useCORS: true, 
-      logging: false,
-      x: 0,
-      y: 0,
-      width: 794,
-      height: 1123,
-      windowWidth: 794,
-      windowHeight: 1123
-    },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
-
-  try {
-    await html2pdf().set(opt).from(pdfContainer).save();
-  } catch (err) {
-    alert('PDF 產生失敗，請重試或使用系統列印功能。');
-  } finally {
-    document.body.removeChild(pdfContainer);
-    if (btn) {
-      btn.innerText = originalText;
-      btn.disabled = false;
-    }
-  }
 }
 </script>
 </body>
