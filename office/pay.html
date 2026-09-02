@@ -339,6 +339,7 @@ function initDefaultDates() {
   document.getElementById('datepicker_2').value = "";
 }
 
+// 部門名稱變更處理：當單據一變更時，同步修改單據二的部門名稱與代號
 function onDeptChange(id) {
   const deptName = document.getElementById(`dept_name_${id}`).value;
   const codeInput = document.getElementById(`dept_code_${id}`);
@@ -349,6 +350,15 @@ function onDeptChange(id) {
     regionInput.value = "";
   } else if (!regionInput.value) {
     regionInput.value = "中-慈心";
+  }
+
+  // 單據一選擇變更時，自動連動調整單據二
+  if (id === 1) {
+    const dept2Select = document.getElementById('dept_name_2');
+    if (dept2Select) {
+      dept2Select.value = deptName;
+      onDeptChange(2);
+    }
   }
 }
 
