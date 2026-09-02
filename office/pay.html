@@ -104,7 +104,7 @@
       max-width: 794px;
       min-height: 1123px;
       margin: 0 auto; 
-      padding: 25px 32px;
+      padding: 30px 32px 20px 32px;
       box-sizing: border-box; 
       box-shadow: 0 5px 20px rgba(0,0,0,0.3);
       border-radius: 2px;
@@ -112,7 +112,7 @@
       flex-direction: column; 
       justify-content: space-between;
     }
-    .voucher-box { height: 520px; box-sizing: border-box; position: relative; padding-top: 2px; overflow: hidden; }
+    .voucher-box { height: 510px; box-sizing: border-box; position: relative; padding-top: 2px; overflow: hidden; }
 
     /* 表格強制固定比例 */
     table.grid-table { 
@@ -126,7 +126,7 @@
     .cell-top-left { vertical-align: top; text-align: left; padding: 4px !important; }
     .cut-line { border-top: 1px dashed #cccccc; text-align: center; font-size: 10px; color: #bbbbbb; height: 25px; line-height: 25px; margin: 4px 0; }
 
-    /* 手機與電腦列印：強制宣告 iOS 識別 A4 直式與單頁鎖定 */
+    /* iOS Chrome 與行動裝置特別優化：加寬頂部邊界，強制 A4 直式與嚴格單頁 */
     @media print {
       @page { 
         size: A4 portrait !important; 
@@ -159,11 +159,11 @@
         border: none !important; 
         box-shadow: none !important; 
         margin: 0 auto !important; 
-        padding: 2mm 5mm !important; 
+        padding: 8mm 5mm 2mm 5mm !important; /* 頂部邊界加寬至 8mm */
         width: 195mm !important; 
         max-width: 195mm !important;
-        height: 270mm !important; 
-        max-height: 270mm !important;
+        height: 265mm !important; 
+        max-height: 265mm !important;
         background: #ffffff !important; 
         display: flex !important; 
         flex-direction: column !important;
@@ -176,14 +176,14 @@
         break-inside: avoid !important;
       }
       .voucher-box {
-        height: 122mm !important; 
-        max-height: 122mm !important;
+        height: 120mm !important; 
+        max-height: 120mm !important;
         overflow: hidden !important;
         display: block !important;
       }
       .cut-line {
-        height: 10mm !important;
-        line-height: 10mm !important;
+        height: 8mm !important;
+        line-height: 8mm !important;
         margin: 1mm 0 !important;
       }
       table.grid-table th, table.grid-table td {
