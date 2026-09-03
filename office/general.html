@@ -64,7 +64,7 @@
     .spinner { width: 45px; height: 45px; border: 5px solid #e0e0e0; border-top: 5px solid #1f4e78; border-radius: 50%; animation: spin 1s linear infinite; }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-    /* PDF 模板 (列印專用) */
+    /* PDF 模板 */
     #pdf-template { 
       display: none; 
       position: fixed; 
@@ -110,7 +110,6 @@
 </head>
 <body>
 
-<!-- 全螢幕遮罩 -->
 <div id="pdf-loading">
   <div class="spinner"></div>
   <div style="margin-top: 15px; font-size: 18px; font-weight: bold; color: #1f4e78;">📄 PDF 產生中，請稍候...</div>
@@ -414,8 +413,15 @@ function onModeChange() {
   document.getElementById('lbl-mode-chabo').className = (mode === '茶博專案') ? 'selected' : '';
   document.getElementById('lbl-mode-gaomei').className = (mode === '高美專案') ? 'selected' : '';
 
+  // 包含專案單位與常設單位選單
   const deptSel = document.getElementById('deptSelect');
-  deptSel.innerHTML = `<option value="${config.dept}">${config.dept}</option><option value="custom">✍️ 其他 (手動自訂)</option>`;
+  deptSel.innerHTML = `
+    <option value="${config.dept}">${config.dept}</option>
+    <option value="中慈_台中推廣課632011">中慈_台中推廣課632011</option>
+    <option value="中慈_綠保632013">中慈_綠保632013</option>
+    <option value="中慈_種樹632014">中慈_種樹632014</option>
+    <option value="custom">✍️ 其他 (手動自訂)</option>
+  `;
   document.getElementById('deptCustom').style.display = 'none';
 
   const reasonSel = document.getElementById('reasonSelect');
