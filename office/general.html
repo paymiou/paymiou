@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>國內外出差旅費報告單 - 填報系統</title>
+  <style>
+    /* 全域與頁面樣式 */
+    * {
+      box-sizing: border-box;
+      font-family: "Microsoft JhengHei", "微軟正黑體", Arial, sans-serif;
+    }
+    body {
+      background-color: #f4f6f9;
+      margin: 0;
+      padding: 20px;
+      color: #333;
+    }
+
+    /* 控制控制項區塊 (列印時隱藏) */
+    .control-panel {
+      max-width: 210mm;
+      margin: 0 auto 20px auto;
+      background: #ffffff;
+      padding: 15px 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .control-panel h2 {
+      margin-top: 0;
+      color: #1f4e78;
+      font-size: 18px;
+    }
+    .panel-group {
+      margin-bottom: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 10px;
+    }
+    .panel-group label {
+      font-weight: bold;
+      font-size: 14px;
+    }
+    .btn {
+      padding: 6px 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      transition: background 0.2s;
+    }
+    .btn-primary { background: #1f4e78; color: #fff; }
+    .btn-primary:hover { background: #153654; }
+    .btn-secondary { background: #e0e0e0; color: #333; }
+    .btn-secondary:hover { background: #d0d0d0; }
+    .btn-export {
+      width: 100%;
+      padding: 10px;
+      font-size: 16px;
+      background: #28a745;
+      color: white;
+      margin-top: 10px;
+    }
+    .btn-export:hover { background: #218838; }
+
+    /* A4 報表容器 */
+    .paper {
+      width: 210mm;
+      min-height: 297mm;
+      padding: 10mm 12mm;
+      margin: 0 auto;
+      background: #ffffff;
+      box-shadow: 0 0 10px rgba(0,0,0,0.15);
+      position: relative;
+    }
+
+    /* 頂部中元資訊表頭 */
+    .top-meta {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 10px;
+      margin-bottom: 5px;
+    }
+    .top-meta div { flex: 1; }
+    .top-meta .left { text-align: left; }
+    .top-meta .center { text-align: center; font-size: 13px; font-weight: bold; }
+    .top-meta .right { text-align: right; }
+
+    /* 報表大標題 */
+    .doc-title {
+      text-align: center;
+      margin: 5px 0;
+    }
+    .doc-title h1 { margin: 0; font-size: 16px; letter-spacing: 1px; }
+    .doc-title h2 { margin: 2px 0 8px 0; font-size: 14px; font-weight: normal; }
+
+    /* 主要表格樣式 */
+    table.report-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      table-layout: fixed;
+    }
+    table.report-table th, 
+    table.report-table td {
+      border: 1px solid #000;
+      padding: 3px 2px;
+      text-align: center;
+      vertical-align: middle;
+      height: 28px;
+      word-break: break-all;
+    }
+    .text-left { text-align: left !important; padding-left: 5px !important; }
+    .text-right { text-align: right !important; padding-right: 5px !important; }
+    .bg-light { background-color: #fafafa; }
+
+    /* 表格輸入框樣式 */
+    input[type="text"], input[type="number"], select {
+      width: 100%;
+      height: 100%;
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 11px;
+      font-family: inherit;
+    }
+    input[type="number"] { -moz-appearance: textfield; }
+    input[type="number"]::-webkit-inner-spin-button, 
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+    /* 簽核區塊 */
+    .approval-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      font-size: 11px;
+    }
+    .approval-table td {
+      padding: 4px;
+      height: 28px;
+    }
+
+    /* 備註區 */
+    .notes-section {
+      margin-top: 12px;
+      font-size: 10px;
+      line-height: 1.4;
+    }
+
+    /* 列印專用 CSS 控制 (隱藏介面按鈕，只印報表) */
+    @media print {
+      body {
+        background: none;
+        padding: 0;
+      }
+      .control-panel, .btn-del {
+        display: none !important;
+      }
+      .paper {
+        box-shadow: none;
+        width: 100%;
+        padding: 0;
+        margin: 0;
+      }
+      @page {
+        size: A4 portrait;
+        margin: 10mm 10mm;
+      }
+    }
+
+    .btn-del {
+      color: red;
+      cursor: pointer;
+      font-weight: bold;
+      border: none;
+      background: none;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- 頂部操作與連動控制面板 (列印時會自動隱藏) -->
+  <div class="control-panel">
+    <h2>填報輔助功能</h2>
+    <div class="panel-group">
+      <label>人員姓名快速勾選：</label>
+      <label><input type="checkbox" class="chk-person" value="李怡霈"> 李怡霈</label>
+      <label><input type="checkbox" class="chk-person" value="陳靜如"> 陳靜如</label>
+      <label><input type="checkbox" class="chk-person" value="王嘉梅"> 王嘉梅</label>
+      <label><input type="checkbox" class="chk-person" value="劉珮雯"> 劉珮雯</label>
+      <label><input type="checkbox" class="chk-person" value="鄭政昌"> 鄭政昌</label>
+      <label><input type="checkbox" class="chk-person" value="許詩穎"> 許詩穎</label>
+    </div>
+    <div class="panel-group">
+      <button class="btn btn-secondary" onclick="addExpenseRow()">+ 新增費用項目 (最多6筆)</button>
+      <button class="btn btn-secondary" onclick="addReportRow()">+ 新增報告項目 (最多3筆)</button>
+    </div>
+    <button class="btn btn-export" onclick="window.print()">匯出 / 列印成 PDF 報表</button>
+  </div>
+
+  <!-- A4 實體報表呈現區塊 -->
+  <div class="paper">
+    
+    <!-- 頂部表頭 -->
+    <div class="top-meta">
+      <div class="left">編號：4-AB-c023(1.0)<br>版次：1.0</div>
+      <div class="center">國內外出差旅費報告單</div>
+      <div class="right">制定單位：幕僚總部人資課<br>修訂日期：2019/09/10</div>
+    </div>
+
+    <!-- 標題 -->
+    <div class="doc-title">
+      <h1>財團法人慈心有機農業發展基金會</h1>
+      <h2>國內外出差旅費報告單</h2>
+    </div>
+
+    <!-- 主表格 -->
+    <table class="report-table">
+      <colgroup>
+        <col style="width: 4%;">
+        <col style="width: 4%;">
+        <col style="width: 20%;">
+        <col style="width: 8%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 6%;">
+        <col style="width: 12%;">
+        <col style="width: 8%;">
+        <col style="width: 9%;">
+        <col style="width: 11%;">
+      </colgroup>
+      
+      <!-- 個人資料 -->
+      <tr>
+        <td colspan="2" class="bg-light">姓 名</td>
+        <td colspan="4"><input type="text" id="inp-name" placeholder="可留空手寫"></td>
+        <td colspan="3" class="bg-light">單位代號名稱及職稱</td>
+        <td colspan="3">
+          <input type="text" id="inp-dept" list="dept-list" value="中慈_台中推廣課632011">
+          <datalist id="dept-list">
+            <option value="中慈_台中推廣課632011">
+            <option value="中慈_綠保632013">
+            <option value="中慈_種樹632014">
+          </datalist>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2" class="bg-light">出差事由</td>
+        <td colspan="4">
+          <input type="text" id="inp-reason" list="reason-list" value="農友拜訪" oninput="syncReason(this.value)">
+          <datalist id="reason-list">
+            <option value="農友拜訪">
+            <option value="茶農拜訪">
+            <option value="總部會議">
+            <option value="活動場勘">
+          </datalist>
+        </td>
+        <td colspan="3" class="bg-light">出差國家及城市</td>
+        <td colspan="3">
+          <input type="text" id="inp-city" list="city-list" value="台中清水" oninput="syncCity(this.value)">
+          <datalist id="city-list">
+            <option value="台北"><option value="苗栗"><option value="台中清水">
+            <option value="南投"><option value="彰化"><option value="雲林">
+          </datalist>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="2" class="bg-light">出差時間</td>
+        <td colspan="10" class="text-left">
+          民國 <input type="text" id="y1" style="width:30px; text-align:center;"> 年 
+          <input type="text" id="m1" style="width:22px; text-align:center;" oninput="syncDate()"> 月 
+          <input type="text" id="d1" style="width:22px; text-align:center;" oninput="syncDate()"> 日起至民國 
+          <input type="text" id="y2" style="width:30px; text-align:center;"> 年 
+          <input type="text" id="m2" style="width:22px; text-align:center;"> 月 
+          <input type="text" id="d2" style="width:22px; text-align:center;"> 日止共計 
+          <input type="text" id="days" value="1" style="width:22px; text-align:center;"> 天/附單據 
+          <input type="text" id="receipts" value="1" style="width:22px; text-align:center;"> 張/匯率：
+        </td>
+      </tr>
+
+      <!-- 費用明細表頭 -->
+      <tr class="bg-light">
+        <td colspan="2" id="header-year">年</td>
+        <td rowspan="2">行 程</td>
+        <td colspan="3">交 通 費</td>
+        <td rowspan="2">膳 費</td>
+        <td rowspan="2">宿 費</td>
+        <td colspan="2">其 他 費 用</td>
+        <td rowspan="2">私車油資<br>補貼</td>
+        <td rowspan="2">合 計</td>
+      </tr>
+      <tr class="bg-light">
+        <td>月</td>
+        <td>日</td>
+        <td>大眾交通工具</td>
+        <td>飛機</td>
+        <td>計程車</td>
+        <td>摘 要</td>
+        <td>金額</td>
+      </tr>
+
+      <!-- 費用明細資料 (動態 6 行) -->
+      <tbody id="expense-tbody"></tbody>
+
+      <!-- 費用總計 -->
+      <tr>
+        <td colspan="11" class="bg-light" style="font-weight:bold;">總 計</td>
+        <td class="text-right" id="total-amount-td" style="font-weight:bold;">0</td>
+      </tr>
+
+      <!-- 出差報告分隔線 -->
+      <tr>
+        <td colspan="12" style="border-left:none; border-right:none; font-weight:bold; letter-spacing: 2px;">出 差 報 告</td>
+      </tr>
+
+      <!-- 報告明細表頭 -->
+      <tr class="bg-light">
+        <td>月</td>
+        <td>日</td>
+        <td colspan="4">訪洽公司/機構名稱及接洽人員姓名</td>
+        <td colspan="6">洽 辦 事 項 說 明</td>
+      </tr>
+
+      <!-- 報告明細資料 (動態 3 行) -->
+      <tbody id="report-tbody"></tbody>
+    </table>
+
+    <!-- 簽核與付款區塊 -->
+    <table class="approval-table">
+      <tr>
+        <td style="width: 33%;" class="text-left">核定：</td>
+        <td style="width: 33%;" class="text-left">覆核：</td>
+        <td style="width: 34%;" class="text-left">出差人：</td>
+      </tr>
+      <tr>
+        <td class="text-left">款付旅行社金額：</td>
+        <td colspan="2" class="text-left">款付 ■個人 □匯款 / □領現金金額：</td>
+      </tr>
+      <tr>
+        <td colspan="2" class="text-left">
+          茲領到上列旅費計新台幣 <b id="capital-amount-text" style="font-size: 13px;">零</b> 元整
+        </td>
+        <td class="text-left">領款人簽章：</td>
+      </tr>
+    </table>
+
+    <!-- 備註說明 -->
+    <div class="notes-section">
+      <b>備註：</b><br>
+      1. 依稅法規定，出差報告請逐日填寫，並附相關業務報告<br>
+      2. 若有出差前已核准簽呈請註明簽呈代號於出差事由欄位中。<br>
+      3. 若為國外差旅申請請註明外幣、換算後台幣及匯率。設算匯率以出國當日台灣銀行兌匯匯率計之，並說明計算式。<br>
+      4. 交通費請附相關票根、登機證、旅行社代收轉付收據等憑證。過路費屬其他費用，需附記錄證明。<br>
+      5. 膳費及宿費請附發票或收據。
+    </div>
+
+  </div>
+
+  <script>
+    // 數字轉國字大寫工具
+    function numberToChineseCapital(num) {
+      num = parseInt(num, 10);
+      if (isNaN(num) || num <= 0) return "零";
+      const digits = ["零", "壹", "貳", "參", "肆", "伍", "陸", "柒", "捌", "玖"];
+      const units = ["", "拾", "佰", "仟"];
+      const bigUnits = ["", "萬", "億"];
+      
+      let strNum = num.toString();
+      let len = strNum.length;
+      let result = "";
+      
+      for (let i = 0; i < len; i++) {
+        let n = parseInt(strNum[i], 10);
+        let pos = len - 1 - i;
+        let u = pos % 4;
+        let bu = Math.floor(pos / 4);
+        
+        if (n !== 0) {
+          result += digits[n] + units[u];
+        } else {
+          if (!result.endsWith("零") && u !== 0) {
+            result += "零";
+          }
+        }
+        
+        if (u === 0 && bu > 0) {
+          if (result.endsWith("零")) {
+            result = result.slice(0, -1);
+          }
+          result += bigUnits[bu];
+        }
+      }
+      return result.replace(/零+$/, "") || "零";
+    }
+
+    // 初始化日期與系統現狀
+    const now = new Date();
+    const rocYear = now.getFullYear() - 1911;
+    const currM = now.getMonth() + 1;
+    const currD = now.getDate();
+
+    document.getElementById('y1').value = rocYear;
+    document.getElementById('m1').value = currM;
+    document.getElementById('d1').value = currD;
+    document.getElementById('y2').value = rocYear;
+    document.getElementById('m2').value = currM;
+    document.getElementById('d2').value = currD;
+    document.getElementById('header-year').innerText = rocYear + " 年";
+
+    // 初始化動態表格資料結構
+    let expenses = [];
+    let reports = [];
+
+    function addExpenseRow(desc = "", amount = "") {
+      if (expenses.length >= 6) return;
+      const city = document.getElementById('inp-city').value;
+      expenses.push({
+        m: document.getElementById('m1').value,
+        d: document.getElementById('d1').value,
+        route: city ? `台中 到 ${city} 來回` : "",
+        desc: desc,
+        amount: amount
+      });
+      renderExpenses();
+    }
+
+    function removeExpenseRow(index) {
+      expenses.splice(index, 1);
+      renderExpenses();
+    }
+
+    function renderExpenses() {
+      const tbody = document.getElementById('expense-tbody');
+      tbody.innerHTML = '';
+      let total = 0;
+
+      for (let i = 0; i < 6; i++) {
+        const tr = document.createElement('tr');
+        if (i < expenses.length) {
+          const item = expenses[i];
+          const amt = parseInt(item.amount, 10) || 0;
+          total += amt;
+
+          tr.innerHTML = `
+            <td><input type="text" value="${item.m}" onchange="expenses[${i}].m=this.value"></td>
+            <td><input type="text" value="${item.d}" onchange="expenses[${i}].d=this.value"></td>
+            <td class="text-left"><input type="text" value="${item.route}" onchange="expenses[${i}].route=this.value"></td>
+            <td></td><td></td><td></td><td></td><td></td>
+            <td>
+              <input type="text" value="${item.desc}" list="desc-list" onchange="expenses[${i}].desc=this.value">
+              <datalist id="desc-list"><option value="公務車"><option value="過路費"></datalist>
+            </td>
+            <td class="text-right"><input type="number" value="${item.amount}" oninput="expenses[${i}].amount=this.value; renderExpenses();"></td>
+            <td></td>
+            <td class="text-right">${amt ? amt : ''}</td>
+            <td style="width:0; padding:0; border:none;" class="btn-del">
+              <button class="btn-del" onclick="removeExpenseRow(${i})">✕</button>
+            </td>
+          `;
+        } else {
+          // 保持固定 6 行版面
+          tr.innerHTML = `<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>`;
+        }
+        tbody.appendChild(tr);
+      }
+
+      document.getElementById('total-amount-td').innerText = total;
+      document.getElementById('capital-amount-text').innerText = numberToChineseCapital(total);
+    }
+
+    function addReportRow() {
+      if (reports.length >= 3) return;
+      const checkedNames = Array.from(document.querySelectorAll('.chk-person:checked')).map(cb => cb.value).join('、');
+      reports.push({
+        m: document.getElementById('m1').value,
+        d: document.getElementById('d1').value,
+        target: checkedNames,
+        detail: document.getElementById('inp-reason').value
+      });
+      renderReports();
+    }
+
+    function removeReportRow(index) {
+      reports.splice(index, 1);
+      renderReports();
+    }
+
+    function renderReports() {
+      const tbody = document.getElementById('report-tbody');
+      tbody.innerHTML = '';
+
+      for (let i = 0; i < 3; i++) {
+        const tr = document.createElement('tr');
+        if (i < reports.length) {
+          const item = reports[i];
+          tr.innerHTML = `
+            <td><input type="text" value="${item.m}" onchange="reports[${i}].m=this.value"></td>
+            <td><input type="text" value="${item.d}" onchange="reports[${i}].d=this.value"></td>
+            <td colspan="4" class="text-left"><input type="text" value="${item.target}" onchange="reports[${i}].target=this.value"></td>
+            <td colspan="6" class="text-left"><input type="text" value="${item.detail}" onchange="reports[${i}].detail=this.value"></td>
+            <td style="width:0; padding:0; border:none;" class="btn-del">
+              <button class="btn-del" onclick="removeReportRow(${i})">✕</button>
+            </td>
+          `;
+        } else {
+          // 保持固定 3 行版面
+          tr.innerHTML = `<td></td><td></td><td colspan="4"></td><td colspan="6"></td>`;
+        }
+        tbody.appendChild(tr);
+      }
+    }
+
+    // 連動同步邏輯
+    function syncCity(val) {
+      expenses.forEach(item => {
+        if (!item.route || item.route.includes("台中 到 ")) {
+          item.route = val ? `台中 到 ${val} 來回` : "";
+        }
+      });
+      renderExpenses();
+    }
+
+    function syncReason(val) {
+      reports.forEach(item => item.detail = val);
+      renderReports();
+    }
+
+    function syncDate() {
+      const m = document.getElementById('m1').value;
+      const d = document.getElementById('d1').value;
+      expenses.forEach(item => { item.m = m; item.d = d; });
+      reports.forEach(item => { item.m = m; item.d = d; });
+      renderExpenses();
+      renderReports();
+    }
+
+    // 監聽人員 Checkbox 選取
+    document.querySelectorAll('.chk-person').forEach(chk => {
+      chk.addEventListener('change', () => {
+        const selected = Array.from(document.querySelectorAll('.chk-person:checked')).map(c => c.value).join('、');
+        reports.forEach(item => item.target = selected);
+        renderReports();
+      });
+    });
+
+    // 預設預載兩筆費用與一筆報告
+    addExpenseRow("公務車", "");
+    addExpenseRow("過路費", "");
+    addReportRow();
+  </script>
+</body>
+</html>
